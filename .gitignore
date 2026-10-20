@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Node
+node_modules/
+
+# Editor
+.vscode/
+.idea/
+
+# Archives (配布用 zip など)
+*.zip
