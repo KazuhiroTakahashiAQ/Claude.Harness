@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# リポジトリ自身を ~/.claude/harness に、CLAUDE.md と skills/* を ~/.claude 配下へシンボリックリンクする。
+# リポジトリ内の CLAUDE.md と skills/* を ~/.claude 配下へシンボリックリンクする。
 # 既存の実ファイル/ディレクトリがある場合は上書きせずスキップする。
 set -euo pipefail
+shopt -s nullglob
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# シンボリックリンク経由で呼ばれても実体のパスを得るため -P で解決する
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
 link() {
@@ -20,7 +22,6 @@ link() {
 }
 
 mkdir -p "$CLAUDE_DIR/skills"
-link "$REPO" "$CLAUDE_DIR/harness"
 link "$REPO/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 for d in "$REPO"/skills/*/; do
   name="$(basename "$d")"
