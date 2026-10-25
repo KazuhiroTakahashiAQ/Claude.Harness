@@ -3,11 +3,12 @@
 #
 # 使い方: verify.sh <kamishibai.html> <tmpdir> [screenshot.png [カード番号]]
 #   tmpdir は新しい空ディレクトリ (検証用ページを置く)。
-# 出力: 1行の結果。summaryFirst / qOnLoad / qCards / popOpens / cards / brokenImg / emptyJa / ocrCards / hlCards /
-#   first / last / errors / mobile を表示する。次を満たせば合格。
+# 出力: 1行の結果。summaryFirst / qOnLoad / qCards / popOpens / cards / pages / brokenImg / emptyJa / ocrCards / hlCards /
+#   first / last / errors / mobile を表示する (cards=発言数、pages=同じ画面をまとめたページ数。巡回はページ単位)。
+#   次を満たせば合格。
 #   summaryFirst=true (最初のページが1分サマリー)、errors=[]、brokenImg=0、emptyJa=0、overflow=false、
 #   用語集を付けた場合は (qOnLoad>0 または qCards>0) かつ popOpens=true (「？」が初期状態から出て、押すと開く)。
-#   qOnLoad はサマリー内、qCards は「？」を含むカードの数。
+#   qOnLoad はサマリー内、qCards は「？」を含むページの数。
 # 終了コード: 0=検証を実行 / 3=ブラウザが無く検証できない (この場合は目視で代替する)
 # 環境変数: CHROME  ブラウザの実行ファイル (未指定なら自動で探す)
 #
@@ -18,7 +19,7 @@
 set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
-  sed -n '2,17p' "$0"
+  sed -n '2,18p' "$0"
   exit 2
 fi
 
@@ -54,7 +55,7 @@ function finish() {
     let out;
     try {
       const w = a.contentWindow, errs = [];
-      const N = w.eval('cards.length');
+      const N = w.eval('pages.length'), C = w.eval('cards.length');
       const d0 = a.contentDocument;
       const summaryFirst = !d0.getElementById('summary').hidden;
       const qOnLoad = d0.querySelectorAll('#summary .q').length;
@@ -69,7 +70,7 @@ function finish() {
           if (popOpens === 'n/a') { d.querySelector('#text .q').click(); popOpens = !d.getElementById('pop').hidden; }
         }
         if (!d.getElementById('pic').hidden && (!img.complete || img.naturalWidth < 100)) broken++;
-        if (!d.querySelector('#text .ja').textContent.trim()) emptyJa++;
+        d.querySelectorAll('#text .ja').forEach((el) => { if (!el.textContent.trim()) emptyJa++; });
         if (d.querySelector('#text .ocr li')) ocr++;
         if (!d.getElementById('hl').hidden) hl++;
         if (i === 0) first = d.querySelector('#text .chip').textContent;
@@ -77,7 +78,7 @@ function finish() {
       }
       const e = b.contentDocument.documentElement;
       out = 'summaryFirst=' + summaryFirst + ' qOnLoad=' + qOnLoad + ' qCards=' + qCards + ' popOpens=' + popOpens +
-        ' cards=' + N + ' brokenImg=' + broken + ' emptyJa=' + emptyJa + ' ocrCards=' + ocr + ' hlCards=' + hl +
+        ' cards=' + C + ' pages=' + N + ' brokenImg=' + broken + ' emptyJa=' + emptyJa + ' ocrCards=' + ocr + ' hlCards=' + hl +
         ' first=' + first + ' last=' + last + ' errors=' + JSON.stringify(errs) +
         ' mobile(390px): scrollW=' + e.scrollWidth + ' clientW=' + e.clientWidth + ' overflow=' + (e.scrollWidth > e.clientWidth);
     } catch (e) {

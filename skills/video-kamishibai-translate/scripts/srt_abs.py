@@ -1,4 +1,4 @@
-"""字幕ファイル (SRT / VTT) を、動画内の絶対時刻 (m:ss.ss) 付きの行にして標準出力へ出す。
+"""字幕ファイル (SRT / VTT) を、動画内の絶対時刻 (m:ss.ss。1時間以上は h:mm:ss.ss) 付きの行にして標準出力へ出す。
 
 使い方: python -I srt_abs.py <字幕ファイル> <offset_sec> [min_abs_sec max_abs_sec]
   offset_sec   字幕の 0 秒が動画の何秒にあたるか (prepare.sh が音声を切り出した開始秒。外部の字幕なら 0)
@@ -14,6 +14,13 @@ TS = re.compile(r"(?:(\d+):)?(\d{1,2}):(\d{2})[.,](\d{1,3})")
 def to_sec(m: "re.Match[str]") -> float:
     h, mi, s, ms = m.groups()
     return int(h or 0) * 3600 + int(mi) * 60 + int(s) + int(ms.ljust(3, "0")) / 1000
+
+
+def fmt(sec: float) -> str:
+    # 1時間未満は m:ss.ss、1時間以上は h:mm:ss.ss (分が60以上にならないようにする)
+    h, rest = divmod(sec, 3600)
+    m, s = divmod(rest, 60)
+    return f"{int(h)}:{int(m):02d}:{s:05.2f}" if h else f"{int(m)}:{s:05.2f}"
 
 
 def main() -> None:
@@ -34,7 +41,7 @@ def main() -> None:
             continue
         body = re.sub(r"<[^>]+>", "", " ".join(lines[idx + 1:])).strip()  # VTT の装飾タグを除く
         if body:
-            print(f"{int(start // 60)}:{start % 60:05.2f} {body}")
+            print(f"{fmt(start)} {body}")
 
 
 main()

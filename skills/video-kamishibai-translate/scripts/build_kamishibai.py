@@ -5,9 +5,12 @@
 
 scenes.py に必要な名前 (references/scenes_template.py を参照):
   CARDS / SECTIONS / NOTES / SUMMARY (最初のページの1分サマリー。必須)
-  任意: GLOSSARY (用語の？ポップアップ。空なら「？」も用語集も出ない)、TITLE、SUBTITLE、
-        SRC_LANG (動画の言語。既定 "en"。"ja" なら翻訳ではなく日本語の紙芝居として扱い、原文欄 (en) は出さない)
+  任意: GLOSSARY (用語の？ポップアップ。省略・空なら「？」も用語集も出ない)、TITLE、SUBTITLE、
+        SRC_LANG (動画の言語。既定 "en"。"ja" なら翻訳ではなく日本語の紙芝居として扱い、原文欄 (en) は出さない)、
+        GROUP_MAX (1ページにまとめる発言数の上限。既定 8。1 ならまとめない)
+カードの t0 / t1 は秒の数値のほか、"84:01" "1:24:01.5" のような文字列でも書ける。
 カードの任意項目: speaker (話者)、frame=None (画像なしのカード)、en / ocr / hl / note
+同じ画面 (frame) と同じ話題 (sec) で連続するカードは、1ページにまとめて表示する (画像は固定、発言を縦に並べる)。
 SUMMARY の任意項目: blocks (決定事項・ToDo など、見出し付きの箇条書きを追加する)
 frames_dir には f_<秒>.jpg を置く (CARDS の frame がその <秒>)。
 標準ライブラリのみ。画像はbase64で1回だけ埋め込み、複数カードで共有する。
@@ -25,7 +28,18 @@ src_dir, frames_dir, out_path = (Path(a) for a in sys.argv[1:4])
 sys.path.insert(0, str(src_dir))
 import scenes  # noqa: E402
 
+def parse_time(v):
+    """秒の数値、または "m:ss" / "h:mm:ss" (小数可) の文字列を秒にする"""
+    if isinstance(v, (int, float)):
+        return float(v)
+    sec = 0.0
+    for part in str(v).strip().split(":"):
+        sec = sec * 60 + float(part)
+    return sec
+
+
 GLOSSARY = getattr(scenes, "GLOSSARY", [])
+GROUP_MAX = max(1, int(getattr(scenes, "GROUP_MAX", 8)))
 SRC_LANG = getattr(scenes, "SRC_LANG", "en")
 TITLE = getattr(scenes, "TITLE", "動画 紙芝居")
 SUBTITLE = getattr(
@@ -42,6 +56,7 @@ CARDS = []
 for raw in scenes.CARDS:
     c = dict(speaker=None, en="", ocr=[], hl=None, note=None)
     c.update(raw)
+    c["t0"], c["t1"] = parse_time(c["t0"]), parse_time(c["t1"])
     c["frame"] = None if c.get("frame") is None else str(c["frame"])
     c["ocr"] = [list(o) for o in c["ocr"]]
     CARDS.append(c)
@@ -63,6 +78,7 @@ payload = {
     "summary": SUMMARY,
     "glossary": GLOSSARY,
     "srcLang": SRC_LANG,
+    "groupMax": GROUP_MAX,
     "ocrLabel": "画面内の外国語テキストの訳" if SRC_LANG == "ja" else "画面内テキストの訳",
 }
 
@@ -83,9 +99,21 @@ corpus = SUMMARY["lead"] + "".join(p.get("t", "") for p in SUMMARY["points"]) + 
 for c in CARDS:
     corpus += c["ja"] + "".join(o[1] for o in c["ocr"])
 unused = [g["term"] for g in GLOSSARY if not any(m in corpus for m in g["match"])]
-summary_chars = (len(SUMMARY["lead"]) + sum(len(p.get("h", "")) + len(p.get("t", "")) for p in SUMMARY["points"])
-                 + sum(len(b["label"]) for b in SUMMARY["blocks"]) + sum(len(it) for it in block_items))
+# サマリーの文字数: lead + points の本文と、blocks (決定事項・ToDo など) を別に数える
+summary_chars = len(SUMMARY["lead"]) + sum(len(p.get("h", "")) + len(p.get("t", "")) for p in SUMMARY["points"])
+blocks_chars = sum(len(b["label"]) for b in SUMMARY["blocks"]) + sum(len(it) for it in block_items)
 
+
+n_pages = 0
+_prev = None
+_run = 0
+for c in CARDS:
+    if _prev is not None and _prev["sec"] == c["sec"] and _prev["frame"] == c["frame"] and _run < GROUP_MAX:
+        _run += 1
+    else:
+        n_pages += 1
+        _run = 1
+    _prev = c
 
 html = r"""<!doctype html>
 <html lang="ja">
@@ -201,6 +229,13 @@ footer dd { margin: 0; color: var(--muted); }
 .lightbox.on { display: flex; }
 .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .stage.noimg { grid-template-columns: minmax(0, 780px); justify-content: center; }
+.utt { padding: 2px 0 6px; }
+.utt.multi { border-left: 3px solid var(--border); padding: 4px 0 2px 12px; margin: 0 0 12px; cursor: pointer; }
+.utt.multi.on { border-left-color: var(--accent); }
+.utt .ja { margin-bottom: 6px; }
+.uhead { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 2px; }
+.ut { font-size: 10.5px; color: var(--accent); font-variant-numeric: tabular-nums; }
+@media (min-width: 961px) { .pic { position: sticky; top: 8px; } }
 .chip.spk { background: transparent; border: 1px solid var(--accent); }
 .blocks { display: grid; gap: 10px; margin: 0 0 22px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .blocks section { border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
@@ -274,12 +309,21 @@ footer dd { margin: 0; color: var(--muted); }
 const IMG = __IMG__;
 const DATA = __DATA__;
 const $ = (id) => document.getElementById(id);
-const cards = DATA.cards, N = cards.length, GL = DATA.glossary;
+const cards = DATA.cards, GL = DATA.glossary;
+// 同じ画面 (frame) と同じ話題 (sec) で連続するカードを、1ページにまとめる (上限 DATA.groupMax 発言)
+const pages = [];
+cards.forEach((c) => {
+  const p = pages[pages.length - 1];
+  if (p && p.sec === c.sec && p.frame === c.frame && p.items.length < DATA.groupMax) { p.items.push(c); p.t1 = c.t1; }
+  else pages.push({ sec: c.sec, frame: c.frame, t0: c.t0, t1: c.t1, items: [c] });
+});
+const N = pages.length;
+let act = 0;                        // ページ内で、強調枠を表示している発言の添字
 let cur = -1;                       // -1 は最初のページ (1分サマリー)
 
-const mmss = (s) => {
-  const t = Math.floor(s);
-  return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+const mmss = (s) => {               // 1時間以上は h:mm:ss
+  const t = Math.floor(s), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = String(t % 60).padStart(2, "0");
+  return h ? h + ":" + String(m).padStart(2, "0") + ":" + sec : m + ":" + sec;
 };
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -342,11 +386,11 @@ function openPop(btn) {
 function renderSummary() {
   const s = DATA.summary, used = new Set();
   const flow = DATA.sections.map((name, si) => {
-    const idx = cards.findIndex((c) => c.sec === si);
+    const idx = pages.findIndex((p) => p.sec === si);
     if (idx < 0) return "";
     const n = cards.filter((c) => c.sec === si).length;
-    return '<button class="flow" type="button" data-go="' + idx + '"><span class="ft">' + mmss(cards[idx].t0) +
-      '〜 · ' + (idx + 1) + '枚目から</span><span class="fn">' + esc(name) + '</span><span class="fc">' + n + "枚</span></button>";
+    return '<button class="flow" type="button" data-go="' + idx + '"><span class="ft">' + mmss(pages[idx].t0) +
+      '〜 · ' + (idx + 1) + '枚目から</span><span class="fn">' + esc(name) + '</span><span class="fc">' + n + "発言</span></button>";
   }).join("");
   $("summary").innerHTML =
     '<div class="chips"><span class="chip">1分サマリー</span><span class="chip sec">読了の目安: 約1分</span></div>' +
@@ -360,51 +404,63 @@ function renderSummary() {
     '<button class="nav primary" id="start" type="button">紙芝居を始める →</button>';
 }
 
-// --- 各カード
-function renderCard() {
-  const c = cards[cur];
-  const prev = cur > 0 ? cards[cur - 1] : null;
-  const used = new Set();
-  const hasPic = c.frame !== null;
+// --- 各ページ (同じ画面の発言をまとめたもの)
+function renderPage() {
+  const p = pages[cur];
+  const used = new Set();                 // 「？」は、1ページで同じ用語につき最初の1回だけ
+  const hasPic = p.frame !== null;
   $("pic").hidden = !hasPic;
   $("stage").classList.toggle("noimg", !hasPic);
   if (hasPic) {
     const img = $("img");
-    img.src = IMG[c.frame];
-    img.alt = "動画 " + mmss(c.t0) + " 付近のキャプチャ";
+    img.src = IMG[p.frame];
+    img.alt = "動画 " + mmss(p.t0) + " 付近のキャプチャ";
   }
-  const hl = $("hl");
-  if (hasPic && c.hl) {
+  const lang = esc(DATA.srcLang);
+  const multi = p.items.length > 1;
+  const utts = p.items.map((c, k) =>
+    '<div class="utt' + (multi ? " multi" : "") + '" data-k="' + k + '">' +
+    (multi || c.speaker ? '<div class="uhead">' + (multi ? '<span class="ut">' + mmss(c.t0) + "</span>" : "") +
+      (c.speaker ? '<span class="chip spk">' + esc(c.speaker) + "</span>" : "") + "</div>" : "") +
+    '<p class="ja">' + brk(annotate(c.ja, used)) + "</p>" +
+    (c.en ? '<p class="en" lang="' + lang + '">' + esc(c.en) + "</p>" : "") +
+    (c.note ? '<p class="note">' + brk(esc(c.note)) + "</p>" : "") + "</div>").join("");
+  const ocrItems = p.items.flatMap((c) => c.ocr);
+  let ocr = "";
+  if (ocrItems.length) {
+    ocr = '<details class="ocr" open><summary>' + esc(DATA.ocrLabel) + '</summary><ul>' +
+      ocrItems.map((o) => '<li><span class="oen" lang="' + lang + '">' + esc(o[0]) + '</span><span class="oja">' + brk(annotate(o[1], used)) + "</span></li>").join("") +
+      "</ul></details>";
+  } else if (hasOcr && hasPic && cur > 0 && pages[cur - 1].frame === p.frame) {
+    ocr = '<details class="ocr"><summary>' + esc(DATA.ocrLabel) + '</summary><p class="same">画面は前のページと同じです。訳は前のページを参照してください。</p></details>';
+  }
+  $("text").innerHTML =
+    '<div class="chips"><span class="chip">' + mmss(p.t0) + "〜" + mmss(p.t1) + "</span>" +
+    '<span class="chip sec">' + esc(DATA.sections[p.sec]) + "</span>" +
+    (multi ? '<span class="chip sec">' + p.items.length + "発言</span>" : "") + "</div>" + utts + ocr;
+  // 強調枠は、枠を持つ最初の発言から始める。発言をクリックするとその発言の枠に切り替わる
+  setAct(Math.max(0, p.items.findIndex((c) => c.hl)));
+}
+
+function setAct(k) {
+  const p = pages[cur];
+  act = k;
+  document.querySelectorAll("#text .utt").forEach((u, i) => u.classList.toggle("on", i === k && p.items.length > 1));
+  const c = p.items[k], hl = $("hl");
+  if (p.frame !== null && c && c.hl) {
     hl.hidden = false;
     hl.style.left = c.hl[0] + "%"; hl.style.top = c.hl[1] + "%";
     hl.style.width = c.hl[2] + "%"; hl.style.height = c.hl[3] + "%";
   } else {
     hl.hidden = true;
   }
-  const ja = brk(annotate(c.ja, used));
-  const lang = esc(DATA.srcLang);
-  let ocr = "";
-  if (c.ocr.length) {
-    ocr = '<details class="ocr" open><summary>' + esc(DATA.ocrLabel) + '</summary><ul>' +
-      c.ocr.map((o) => '<li><span class="oen" lang="' + lang + '">' + esc(o[0]) + '</span><span class="oja">' + brk(annotate(o[1], used)) + "</span></li>").join("") +
-      "</ul></details>";
-  } else if (hasOcr && hasPic && prev && prev.frame === c.frame) {
-    ocr = '<details class="ocr"><summary>' + esc(DATA.ocrLabel) + '</summary><p class="same">画面は前のカードと同じです。訳は前のカードを参照してください。</p></details>';
-  }
-  $("text").innerHTML =
-    '<div class="chips"><span class="chip">' + mmss(c.t0) + "〜" + mmss(c.t1) + "</span>" +
-    (c.speaker ? '<span class="chip spk">' + esc(c.speaker) + "</span>" : "") +
-    '<span class="chip sec">' + esc(DATA.sections[c.sec]) + "</span></div>" +
-    '<p class="ja">' + ja + "</p>" +
-    (c.en ? '<p class="en" lang="' + lang + '">' + esc(c.en) + "</p>" : "") +
-    (c.note ? '<p class="note">' + brk(esc(c.note)) + "</p>" : "") + ocr;
 }
 
 function render() {
   const sum = cur < 0;
   $("summary").hidden = !sum;
   $("stage").hidden = sum;
-  if (sum) renderSummary(); else renderCard();
+  if (sum) renderSummary(); else renderPage();
   $("count").textContent = sum ? "サマリー" : (cur + 1) + " / " + N;
   $("prog").style.width = ((cur + 1) / N * 100) + "%";
   $("prev").disabled = cur <= -1;
@@ -434,7 +490,7 @@ function buildStrip() {
   s0.innerHTML = "<span>1分<br>サマリー</span>";
   s0.addEventListener("click", () => go(-1));
   strip.appendChild(s0);
-  cards.forEach((c, i) => {
+  pages.forEach((c, i) => {
     const b = document.createElement("button");
     b.type = "button"; b.className = "thumb"; b.setAttribute("role", "listitem");
     b.setAttribute("aria-label", (i + 1) + "枚目 " + mmss(c.t0));
@@ -453,8 +509,8 @@ function buildStrip() {
 $("prev").addEventListener("click", () => go(cur - 1));
 $("next").addEventListener("click", () => go(cur + 1));
 $("pic").addEventListener("click", () => {
-  if (cur < 0 || cards[cur].frame === null) return;
-  $("lbimg").src = IMG[cards[cur].frame]; $("lb").classList.add("on");
+  if (cur < 0 || pages[cur].frame === null) return;
+  $("lbimg").src = IMG[pages[cur].frame]; $("lb").classList.add("on");
 });
 $("lb").addEventListener("click", () => $("lb").classList.remove("on"));
 $("px").addEventListener("click", closePop);
@@ -467,6 +523,8 @@ document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-go]");
   if (g) { go(Number(g.dataset.go)); return; }
   if (e.target.closest("#start")) { go(0); return; }
+  const u = e.target.closest(".utt");
+  if (u && cur >= 0 && !e.target.closest(".q")) setAct(Number(u.dataset.k));
   if (!pop.contains(e.target)) closePop();
 });
 window.addEventListener("resize", closePop);
@@ -509,9 +567,12 @@ html = (html.replace("__TITLE__", htmllib.escape(TITLE))
         .replace("__SUBTITLE__", sentences_br(htmllib.escape(SUBTITLE)))
         .replace("__IMG__", js(images)).replace("__DATA__", js(payload)))
 out_path.write_text(html, encoding="utf-8")
-print(f"cards={len(CARDS)} images={len(images)} bytes={out_path.stat().st_size} "
-      f"glossary={len(GLOSSARY)} summary_chars={summary_chars}")
-if not 450 <= summary_chars <= 800:
-    print(f"注意: サマリーが {summary_chars} 文字です。約1分で読める 500〜700 文字を目安に調整してください。")
+print(f"cards={len(CARDS)} pages={n_pages} images={len(images)} bytes={out_path.stat().st_size} "
+      f"glossary={len(GLOSSARY)} summary_chars={summary_chars} blocks_chars={blocks_chars}")
+# 約1分で読める目安: 本文 (lead + points) は 300〜700 字、blocks を含めた合計は 1000 字以内
+if not 300 <= summary_chars <= 700:
+    print(f"注意: サマリー本文 (lead + points。blocks は除く) が {summary_chars} 文字です。300〜700 文字に調整してください。")
+if summary_chars + blocks_chars > 1000:
+    print(f"注意: サマリーが blocks を含めて {summary_chars + blocks_chars} 文字です。1000 文字以内に調整してください。")
 if unused:
     print("本文に出てこない用語:", ", ".join(unused))
