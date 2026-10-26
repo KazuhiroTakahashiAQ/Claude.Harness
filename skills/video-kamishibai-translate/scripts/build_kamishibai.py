@@ -1,6 +1,9 @@
 """scenes.py とフレーム画像から、単一HTMLの紙芝居を生成する。
 
-使い方: run_py.sh build_kamishibai.py <scenes.pyのあるディレクトリ> <frames_dir> <out.html>
+使い方: run_py.sh build_kamishibai.py <scenes.pyのあるディレクトリ> <frames_dir> <out.html> [--video <動画ファイル名>]
+  --video: 出力HTMLと同じディレクトリに置く元動画のファイル名 (パスではなくファイル名)。指定すると「▶ 再生」ボタンが出て、
+           クリックした時だけその動画を読み込み、そのページ (発言) の開始時刻から再生する。HTMLには動画を埋め込まない。
+           省略すると再生ボタンは出ない。動画が見つからなければ再生欄にメッセージを出す。
   (run_py.sh は uv / python3 のどちらでも動かす。直接 `python3 -I build_kamishibai.py ...` でもよい)
 
 scenes.py に必要な名前 (references/scenes_template.py を参照):
@@ -24,7 +27,15 @@ import re
 import sys
 from pathlib import Path
 
-src_dir, frames_dir, out_path = (Path(a) for a in sys.argv[1:4])
+_args = sys.argv[1:]
+VIDEO = None
+if "--video" in _args:
+    _i = _args.index("--video")
+    if _i + 1 >= len(_args):
+        sys.exit("--video にはファイル名を指定してください")
+    VIDEO = Path(_args[_i + 1]).name          # 同一ディレクトリ前提なのでファイル名だけを使う
+    del _args[_i:_i + 2]
+src_dir, frames_dir, out_path = (Path(a) for a in _args[:3])
 sys.path.insert(0, str(src_dir))
 import scenes  # noqa: E402
 
@@ -79,6 +90,7 @@ payload = {
     "glossary": GLOSSARY,
     "srcLang": SRC_LANG,
     "groupMax": GROUP_MAX,
+    "video": VIDEO,
     "ocrLabel": "画面内の外国語テキストの訳" if SRC_LANG == "ja" else "画面内テキストの訳",
 }
 
@@ -233,6 +245,12 @@ footer dd { margin: 0; color: var(--muted); }
 .utt.multi { border-left: 3px solid var(--border); padding: 4px 0 2px 12px; margin: 0 0 12px; cursor: pointer; }
 .utt.multi.on { border-left-color: var(--accent); }
 .utt .ja { margin-bottom: 6px; }
+.play { font: inherit; font-size: 10.5px; border: 1px solid var(--accent); background: none; color: var(--accent); border-radius: 999px; padding: 1px 10px; cursor: pointer; }
+.play:hover { background: var(--accent-soft); }
+.vbox { position: fixed; right: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 8px; z-index: 9; }
+.vbox video { display: block; width: 100%; border-radius: 8px; background: #000; }
+.vbox .vx { position: absolute; right: 6px; top: 6px; z-index: 1; border: 0; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; width: 24px; height: 24px; cursor: pointer; }
+.vbox .vmsg { margin: 6px 4px 0; font-size: 11.5px; color: var(--muted); }
 .uhead { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 2px; }
 .ut { font-size: 10.5px; color: var(--accent); font-variant-numeric: tabular-nums; }
 @media (min-width: 961px) { .pic { position: sticky; top: 8px; } }
@@ -302,6 +320,11 @@ footer dd { margin: 0; color: var(--muted); }
   <b id="pt"></b>
   <p id="pd"></p>
   <small>初心者向けの補足です (動画の発言ではありません)</small>
+</div>
+<div class="vbox" id="vbox" role="dialog" aria-label="元動画" hidden>
+  <button class="vx" id="vx" type="button" aria-label="閉じる">×</button>
+  <video id="vid" controls preload="none"></video>
+  <p class="vmsg" id="vmsg" hidden>元動画が見つかりません。HTMLと同じフォルダに「__VIDEO__」を置いてください。</p>
 </div>
 <div class="lightbox" id="lb" role="dialog" aria-label="拡大表示"><img id="lbimg" alt=""></div>
 
@@ -404,6 +427,25 @@ function renderSummary() {
     '<button class="nav primary" id="start" type="button">紙芝居を始める →</button>';
 }
 
+// --- 元動画の再生: 動画は埋め込まず、ボタンを押した時に初めて同じフォルダの動画を読み込む
+const playBtn = (t) => DATA.video ? '<button class="play" type="button" data-play="' + t + '">▶ ' + mmss(t) + ' から再生</button>' : "";
+function playVideo(t) {
+  const v = $("vid");
+  $("vbox").hidden = false; $("vmsg").hidden = true;
+  if (!v.getAttribute("src")) v.src = encodeURIComponent(DATA.video) + "#t=" + t;
+  v.currentTime = t;
+  v.play().catch(() => {});
+}
+function closeVideo() { $("vid").pause(); $("vbox").hidden = true; }
+if (DATA.video) {
+  $("vid").addEventListener("error", () => { $("vmsg").hidden = false; });
+  $("vx").addEventListener("click", closeVideo);
+  $("text").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-play]");
+    if (b) { e.stopPropagation(); playVideo(parseFloat(b.dataset.play)); }
+  }, true);
+}
+
 // --- 各ページ (同じ画面の発言をまとめたもの)
 function renderPage() {
   const p = pages[cur];
@@ -421,7 +463,7 @@ function renderPage() {
   const utts = p.items.map((c, k) =>
     '<div class="utt' + (multi ? " multi" : "") + '" data-k="' + k + '">' +
     (multi || c.speaker ? '<div class="uhead">' + (multi ? '<span class="ut">' + mmss(c.t0) + "</span>" : "") +
-      (c.speaker ? '<span class="chip spk">' + esc(c.speaker) + "</span>" : "") + "</div>" : "") +
+      (c.speaker ? '<span class="chip spk">' + esc(c.speaker) + "</span>" : "") + (multi ? playBtn(c.t0) : "") + "</div>" : "") +
     '<p class="ja">' + brk(annotate(c.ja, used)) + "</p>" +
     (c.en ? '<p class="en" lang="' + lang + '">' + esc(c.en) + "</p>" : "") +
     (c.note ? '<p class="note">' + brk(esc(c.note)) + "</p>" : "") + "</div>").join("");
@@ -437,7 +479,7 @@ function renderPage() {
   $("text").innerHTML =
     '<div class="chips"><span class="chip">' + mmss(p.t0) + "〜" + mmss(p.t1) + "</span>" +
     '<span class="chip sec">' + esc(DATA.sections[p.sec]) + "</span>" +
-    (multi ? '<span class="chip sec">' + p.items.length + "発言</span>" : "") + "</div>" + utts + ocr;
+    (multi ? '<span class="chip sec">' + p.items.length + "発言</span>" : "") + playBtn(p.t0) + "</div>" + utts + ocr;
   // 強調枠は、枠を持つ最初の発言から始める。発言をクリックするとその発言の枠に切り替わる
   setAct(Math.max(0, p.items.findIndex((c) => c.hl)));
 }
@@ -565,6 +607,7 @@ go(Number.isFinite(h) ? h - 1 : -1);
 
 html = (html.replace("__TITLE__", htmllib.escape(TITLE))
         .replace("__SUBTITLE__", sentences_br(htmllib.escape(SUBTITLE)))
+        .replace("__VIDEO__", htmllib.escape(VIDEO or ""))
         .replace("__IMG__", js(images)).replace("__DATA__", js(payload)))
 out_path.write_text(html, encoding="utf-8")
 print(f"cards={len(CARDS)} pages={n_pages} images={len(images)} bytes={out_path.stat().st_size} "
