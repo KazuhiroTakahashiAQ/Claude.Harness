@@ -201,6 +201,8 @@ ffmpeg -hide_banner -loglevel error -y -ss <秒> -i <video> -frames:v 1 -vf "sca
 $SK/scripts/run_py.sh $SK/scripts/build_kamishibai.py <scenes.pyのあるdir> <final_dir> ~/Downloads/<名前>_kamishibai.html
 ```
 
+元動画を HTML と同じフォルダに置いて渡す場合は、末尾に `--video <動画のファイル名>` を付ける (例: `--video meeting.mp4`)。各ページと各発言に「▶ ○:○○ から再生」ボタンが付く。動画は HTML に埋め込まず、ボタンを押した時に初めて読み込む (HTML は重くならない)。付けなければボタンは出ない。HTML だけを共有する場合は付けない。
+
 出力に `cards=N pages=P images=M glossary=G summary_chars=S blocks_chars=B` が出る (`cards` は発言数、`pages` は同じ画面をまとめたページ数)。画像が多くて 20MB を超えそうなら、「長い動画の扱い」の手順で減らす。
 `scenes.py` に `TITLE` / `SUBTITLE` を書くと、ヘッダーとタブのタイトルになる (省略時は `SRC_LANG` に合わせた汎用の文言)。`GLOSSARY` を省略すると「？」も用語集も出ない。
 
