@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: multi-file-tabs
+expected_outcome: |
+  複数の sheet.json を 1 つの画面にまとめて見せるために、serve.ts に複数パス（またはフォルダ）を渡す起動コマンドを示している。
+  ファイルはタブで切り替わり、保存・Undo・未保存はファイルごとに独立すると説明している。

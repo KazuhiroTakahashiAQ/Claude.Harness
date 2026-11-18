@@ -15,7 +15,7 @@ description: スプレッドシート / Excel を作る前に、中身（シー�
 |---|---|
 | `<名前>.sheet.json` | 正本。シート複数、列幅、行高、結合、色、セル値。スキーマは `references/sheet-schema.md` |
 | `<名前>.review.json` | 人のコメント（指示）。range / instruction / status / agent_reply。スキーマは `references/review-schema.md` |
-| `scripts/serve.ts` | localhost で HTML を配信し、「保存」で sheet.json / review.json を書く。読み込み後に他の書き手が更新していたら 409 で止める（依存なし） |
+| `scripts/serve.ts` | localhost で HTML を配信し、「保存」で sheet.json / review.json を書く。複数ファイルをタブで配信できる。読み込み後に他の書き手が更新していたら 409 で止める（依存なし） |
 | `scripts/to_xlsx.py` | sheet.json → xlsx（openpyxl、uv 経由） |
 | `assets/template.html` | 描画用テンプレート（serve.ts が埋め込んで配信） |
 | `examples/sample.sheet.json` | サンプル（2 シート、結合・色・幅・行列固定あり） |
@@ -41,15 +41,29 @@ description: スプレッドシート / Excel を作る前に、中身（シー�
 node <skill>/scripts/serve.ts <名前>.sheet.json            # http://localhost:8765/
 node <skill>/scripts/serve.ts <名前>.sheet.json --port 8800 # ポート変更
 ```
+
+**ファイルが複数あるとき**は 1 つのサーバにまとめて渡す（ファイルごとに別ポートで立てない）。画面の最上部にファイルタブが並び、切り替えて見られる。
+
+```bash
+node <skill>/scripts/serve.ts 見積書.sheet.json 請求書.sheet.json   # 複数パス
+node <skill>/scripts/serve.ts <フォルダ>                             # フォルダ内の *.sheet.json を全部
+```
+
+- ファイルごとに review.json・未保存の変更・元に戻す履歴・下書き・409 の検知が独立している。1 つを保存しても他は触らない。未保存のファイルタブには ● が付き、ファイルが外部で更新されると ⚠ が付く。
+- 起動後に増やすには、タブ右端の「+」にパスを入力する（無ければ空の sheet.json を新規作成。フォルダも可）。フォルダ指定で起動していれば、そこに *.sheet.json を置くだけで 3 秒以内にタブが増える。
+- `--review` は 1 ファイルのときだけ使える。複数のときは各 `<名前>.review.json` が自動で使われる。
+- API は `?f=<ファイル名>` でファイルを選ぶ（省略すると最初のファイル。1 ファイル起動の従来どおりの使い方もそのまま動く）。`GET /api/files` で一覧。
 `node x.ts` 形式で動く（Node 22.6 以降。TypeScript の型は実行時に除去される）。バックグラウンドで起動し、URL を人に伝える。サーバを立てられない・使いたくない場合は静的 HTML を出す。
 
 ```bash
 node <skill>/scripts/serve.ts <名前>.sheet.json --render <名前>.html
+node <skill>/scripts/serve.ts a.sheet.json b.sheet.json --render all.html   # 複数ファイルは 1 つの HTML にタブでまとめる
 ```
 
 ### 3. 人が画面で直す・コメントする
 人ができること（右クリックメニューかツールバー）。
 
+- **広い作業領域**: データ範囲の外側にも、画面を埋めるまで（最低 +20 行・+8 列）うっすらした空きマスが続く。そこに入力すると、データ範囲が自動で伸びる。空きマスは保存されない（値を入れたセルだけが sheet.json に入る）。右のコメント一覧は「一覧」ボタンで折りたたみ、境界のドラッグで幅も変えられる（幅と開閉は覚えている）。
 - **選択**: ドラッグ、Shift クリックで拡張、Ctrl/Cmd クリックで追加。列見出し・行見出しのクリックで列・行ごと。
 - **コメント**: 範囲を選んで「コメント」。選択セルの近くに引出線つきの吹き出しが出て、右側に縦の一覧（未対応 / 対応済 / 質問、agent_reply つき）が並ぶ。一覧と吹き出しは連動する。範囲欄に `明細!B2:D5, F3` と直接打ってもよい。
 - **直接編集**: ダブルクリック、または選択して文字入力 / F2 でセルを書き換え（Enter 確定、Esc 取消）。行・列の挿入・削除、見出しのドラッグでの並べ替え、結合・解除、背景色・文字色、太字・配置、行高・列幅のドラッグ、行列の固定、シートタブの追加・削除・名前変更・並べ替え。Ctrl+Z / Ctrl+Shift+Z で元に戻す・やり直す。

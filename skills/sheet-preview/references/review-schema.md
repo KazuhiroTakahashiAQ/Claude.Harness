@@ -1,6 +1,6 @@
 # review.json スキーマ
 
-人の指示とエージェントの返答。ファイル名は `<名前>.review.json`（sheet.json と同じフォルダ）。
+人の指示とエージェントの返答。ファイル名は `<名前>.review.json`（sheet.json と同じフォルダ）。複数ファイルをタブで開いているときも、review.json は sheet.json ごとに 1 つ（ファイルをまたいだ指示は無い）。
 
 ```json
 {
