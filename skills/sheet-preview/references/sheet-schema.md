@@ -20,7 +20,7 @@ HTML 描画と xlsx 変換の正本。ファイル名は `<名前>.sheet.json`�
 |---|---|---|
 | `name` | string | シート名（必須、31 文字以内、`[]:*?/\` は不可。xlsx の制約） |
 | `colWidths` | `{ "A": 90, ... }` | 列幅（px）。未指定は `defaultColWidth`（既定 90） |
-| `rowHeights` | `{ "1": 36, ... }` | 行高（px）。未指定は `defaultRowHeight`（既定 24） |
+| `rowHeights` | `{ "1": 36, ... }` | 行高（px）。未指定は `defaultRowHeight`（既定 24）。セルに改行（`\n`）があると画面では行数に合わせた自動の高さ（1 行 = 文字サイズ × 1.5 px、+5）を計算し、**自動の方が大きいときだけ**指定値より広げる（指定値より狭めない） |
 | `defaultColWidth` / `defaultRowHeight` | number | 既定値（HTML のみ。xlsx では未指定の列・行は既定のまま） |
 | `rows` / `cols` | number | 最低限表示する行数 / 列数。未指定ならセル・結合の最大位置から決める（最小 10 行 6 列）。画面で行・列を足したり消したりすると、この値が明示的に書かれる |
 | `merges` | string[] | 結合範囲。`["A1:F1", "A3:A4"]`。左上セルが値と書式を持つ |
@@ -38,8 +38,13 @@ HTML 描画と xlsx 変換の正本。ファイル名は `<名前>.sheet.json`�
 | `size` | number | 文字サイズ（px / pt を区別せずそのまま） |
 | `align` | `left` \| `center` \| `right` | 横位置 |
 | `valign` | `top` \| `middle` \| `bottom` | 縦位置（xlsx は `middle`→`center` に読み替え） |
-| `wrap` | boolean | 折り返し |
+| `wrap` | boolean | 折り返し（列幅での自動折り返し）。`v` の改行（`\n`）は `wrap` に関わらず画面でも xlsx でも改行として出る（xlsx は改行を含むセルに自動で折り返しを付け、行高は `rowHeights` 指定があればそれ、なければ Excel の自動） |
 | `numFmt` | string | 数値書式。`"#,##0"` など Excel の書式文字列（HTML は `#,##0` のみ簡易反映） |
+
+## 文章の書き方（必須）
+- セルの `v` とコメント本文は、**文末の「。」のたびに `\n` を入れて 1 文を 1 行にする**（例: `"単価は税抜。\n端数は切り捨て。"`）。サーバ（`/api/patch` の `set`）や to_xlsx.py は自動では変換しない。書き手（エージェント）の責任。
+- 確認は `node scripts/serve.ts --lint <name>.sheet.json`（同名の review.json の本文も見る）。「。」の直後が改行でない箇所を出し、あれば終了コード 1。文末の「。」と、「。」を含まない文字列は対象外。
+- 人が画面で編集するときは Enter で確定、Alt+Enter / Shift+Enter でセル内改行。
 
 ## 注意
 - 画面で人が直接編集すると、この JSON がそのまま書き換わる（行・列の挿入・削除・並べ替えはセル・結合・列幅・行高・freeze を一括で付け替える）。エージェントは直す前に現在の内容を読み直す。

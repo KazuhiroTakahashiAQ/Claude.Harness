@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sheet-preview</title>
 <style>
-:root{--bg:#f6f7f9;--panel:#fff;--line:#d0d5dd;--text:#1d2430;--mute:#667085;--accent:#2563eb;--sel:rgba(37,99,235,.18);--head:#eef1f5;--warn:#fff4ce;--ext:#f5f6f8}
-@media (prefers-color-scheme: dark){:root{--bg:#14171c;--panel:#1c2027;--line:#3a414d;--text:#e6e9ef;--mute:#98a2b3;--accent:#6ea0ff;--sel:rgba(110,160,255,.28);--head:#262b34;--warn:#4a3d10;--ext:#e9ecf1}}
+:root{color-scheme:light;--bg:#f6f7f9;--panel:#fff;--line:#d0d5dd;--text:#1d2430;--mute:#667085;--accent:#2563eb;--sel:rgba(37,99,235,.18);--head:#eef1f5;--warn:#fff4ce;--ext:#f5f6f8}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100vh;display:flex;flex-direction:column}
 header{display:flex;align-items:center;gap:10px;padding:2px 10px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
@@ -209,7 +208,19 @@ const parseRect = (t) => {
   if (!p || !q) return null;
   return { r1: Math.min(p.r, q.r), c1: Math.min(p.c, q.c), r2: Math.max(p.r, q.r), c2: Math.max(p.c, q.c) };
 };
-const rectText = (x) => (x.r1 === x.r2 && x.c1 === x.c2) ? colName(x.c1) + x.r1 : colName(x.c1) + x.r1 + ":" + colName(x.c2) + x.r2;
+// 列・行そのものの範囲（B:D / 2:4）。保存は行数・列数に依存しない形（INF）、画面上の選択は実際の大きさ（ax フラグで書式を保つ）
+const AXMAX_R = 1048576, AXMAX_C = 16384;
+const parseRectAx = (t) => {
+  let m = /^([A-Za-z]+):([A-Za-z]+)$/.exec(t.trim());
+  if (m) { const a = colNum(m[1].toUpperCase()), b = colNum(m[2].toUpperCase()); return { r1: 1, c1: Math.min(a, b), r2: AXMAX_R, c2: Math.max(a, b), ax: "col" }; }
+  m = /^(\d+):(\d+)$/.exec(t.trim());
+  if (m) { const a = +m[1], b = +m[2]; return { r1: Math.min(a, b), c1: 1, r2: Math.max(a, b), c2: AXMAX_C, ax: "row" }; }
+  return parseRect(t);
+};
+const plainRect = (x) => ({ r1: x.r1, c1: x.c1, r2: x.r2, c2: x.c2 });
+function clipRect(x, sh) { if (!x || !x.ax) return x; const { R, C } = dims(sh); return x.ax === "col" ? { ...x, r2: Math.min(x.r2, R) } : { ...x, c2: Math.min(x.c2, C) }; }
+const rectText = (x) => x.ax === "col" ? colName(x.c1) + ":" + colName(x.c2) : x.ax === "row" ? x.r1 + ":" + x.r2
+  : (x.r1 === x.r2 && x.c1 === x.c2) ? colName(x.c1) + x.r1 : colName(x.c1) + x.r1 + ":" + colName(x.c2) + x.r2;
 const quoteSheet = (n) => /^[A-Za-z0-9_぀-ヿ一-鿿]+$/.test(n) ? n : "'" + n.replace(/'/g, "''") + "'";
 // "明細!B2:D5, F3, 集計!A1" -> パーツ列 [{sheet, rect|null, raw}]。解釈できないパーツは rect:null で残す
 function splitRanges(text) {
@@ -219,12 +230,12 @@ function splitRanges(text) {
     const m = /^(?:'((?:[^']|'')+)'|([^!']+))!(.+)$/.exec(part);
     if (m) { cur = m[1] ? m[1].replace(/''/g, "'") : m[2]; part = m[3]; }
     if (part === "*") { out.push({ sheet: m ? cur : null, rect: null, star: true, raw: "*" }); continue; } // * = 全シート / Sheet!* = そのシート全体
-    out.push({ sheet: cur ?? sheet.sheets[0].name, rect: parseRect(part), raw: part });
+    out.push({ sheet: cur ?? sheet.sheets[0].name, rect: parseRectAx(part), raw: part });
   }
   return out;
 }
 // 星（全体への確認）は左上セルに目印を出す
-const anchorRect = (p) => p.star ? { r1: 1, c1: 1, r2: 1, c2: 1 } : p.rect;
+const anchorRect = (p) => p.star ? { r1: 1, c1: 1, r2: 1, c2: 1 } : p.rect && p.rect.ax === "col" ? { r1: 1, c1: p.rect.c1, r2: 1, c2: p.rect.c1 } : p.rect && p.rect.ax === "row" ? { r1: p.rect.r1, c1: 1, r2: p.rect.r1, c2: 1 } : p.rect;
 const partOnSheet = (p, name) => p.star ? (p.sheet === null || p.sheet === name) : p.sheet === name;
 const parseRanges = (text) => splitRanges(text).filter((p) => p.rect);
 function joinRanges(parts) {
@@ -275,7 +286,18 @@ function expandMerges(sh, rect) { // 結合セルを部分選択しないよう�
 function parseFreeze(sh) { const p = sh.freeze ? parseAddr(sh.freeze) : null; return p ? { fr: p.r - 1, fc: p.c - 1 } : { fr: 0, fc: 0 }; }
 function setFreezeVal(sh, fr, fc) { if (fr <= 0 && fc <= 0) delete sh.freeze; else sh.freeze = colName(Math.max(fc, 0) + 1) + (Math.max(fr, 0) + 1); }
 const cwOf = (sh, c) => (sh.colWidths || {})[colName(c)] ?? sh.defaultColWidth ?? 90;
-const rhOf = (sh, r) => (sh.rowHeights || {})[r] ?? sh.defaultRowHeight ?? 24;
+// 改行（\n）を含むセルは行数に合わせて行を広げる。rowHeights の指定があっても、自動の高さの方が大きいときだけ広げる（狭めはしない）
+let autoCache = null;
+function autoRows(sh) {
+  if (autoCache && autoCache.sh === sh) return autoCache.map;
+  const map = {}, { origin } = mergeMap(sh);
+  for (const [a, cell] of Object.entries(sh.cells || {})) {
+    if (cell.v === undefined || cell.v === null) continue; const s = String(cell.v); if (!s.includes("\n")) continue;
+    const p = parseAddr(a); if (!p) continue; const m = origin[p.r + "," + p.c]; if (m && m.r2 > m.r1) continue; // 行をまたぐ結合は対象外
+    const h = Math.round(s.split("\n").length * (cell.size || 14) * 1.5) + 5; if (h > (map[p.r] || 0)) map[p.r] = h; }
+  autoCache = { sh, map }; return map;
+}
+const rhOf = (sh, r) => Math.max((sh.rowHeights || {})[r] ?? sh.defaultRowHeight ?? 24, autoRows(sh)[r] || 0);
 
 // ---- 履歴（Undo / Redo） ----
 let undoStack = [], redoStack = [];
@@ -330,7 +352,8 @@ function remapReview(sheetName, axis, f) {
   for (const it of review.threads) { if (it.deleted) continue;
     const parts = splitRanges(it.range), out = []; let touched = false;
     for (const p of parts) { if (p.sheet !== sheetName || !p.rect) { out.push(p); continue; }
-      touched = true; const y = mapRectAxis(p.rect, axis, f); if (y) out.push({ ...p, rect: y }); }
+      touched = true; if (p.rect.ax && (p.rect.ax === "col") === (axis === "r")) { out.push(p); continue; } // 列の範囲は行の操作に影響されない（逆も同じ）
+      const y = mapRectAxis(p.rect, axis, f); if (y) out.push({ ...p, rect: y }); }
     if (!touched) continue;
     if (!out.length) it.deleted = true; else it.range = joinRanges(out); }
 }
@@ -352,7 +375,7 @@ function moveCheck(axis, f, a, b, t) { // 結合をまたぐ移動は不可
 function moveAxis(axis, a, b, t) { const f = mapMove(a, b, t); const k = b - a + 1; const dest = t > b ? t - k : t;
   structOp(axis, f, "move", null, moveCheck(axis, f, a, b, t));
   const sh = curSheet(); const { R, C } = dims(sh);
-  rects = [axis === "r" ? { r1: dest, c1: 1, r2: dest + k - 1, c2: C } : { r1: 1, c1: dest, r2: R, c2: dest + k - 1 }];
+  rects = [axis === "r" ? { r1: dest, c1: 1, r2: dest + k - 1, c2: C, ax: "row" } : { r1: 1, c1: dest, r2: R, c2: dest + k - 1, ax: "col" }];
   refreshSel(); }
 
 // ---- 選択状態 ----
@@ -383,11 +406,12 @@ function marksFor(sname) {
       const put = (k) => { if (!(k in m) || RANK[cls] > RANK[m[k]]) m[k] = cls; };
       if (p.star) { put("0,0"); continue; }
       if (!p.rect) continue;
-      for (let r = p.rect.r1; r <= p.rect.r2; r++) for (let c = p.rect.c1; c <= p.rect.c2; c++) put(r + "," + c); } }
+      const x = clipRect(p.rect, sheet.sheets.find((s) => s.name === sname) || curSheet());
+      for (let r = x.r1; r <= x.r2; r++) for (let c = x.c1; c <= x.c2; c++) put(r + "," + c); } }
   return m;
 }
 function render() {
-  if (cur >= sheet.sheets.length) cur = 0;
+  autoCache = null; if (cur >= sheet.sheets.length) cur = 0;
   $("title").textContent = sheet.title || "(無題)"; updateTitle();
   $("mode").textContent = sheet.mode === "data" ? "実データ確認" : "スキーマ確認";
   const sh = curSheet(), { R, C, VR, VC } = vdims(sh), { origin, covered } = mergeMap(sh), marks = marksFor(sh.name), fz = parseFreeze(sh);
@@ -409,7 +433,8 @@ function render() {
       if (cell.bold) st.push("font-weight:700"); if (cell.size) st.push(`font-size:${cell.size}px`);
       if (cell.align) st.push("text-align:" + cell.align);
       if (cell.valign) st.push("vertical-align:" + cell.valign);
-      if (cell.wrap) st.push("white-space:normal");
+      const hasNL = cell.v !== undefined && cell.v !== null && String(cell.v).includes("\n");
+      if (cell.wrap) st.push(hasNL ? "white-space:pre-wrap" : "white-space:normal"); else if (hasNL) st.push("white-space:pre");
       const colFz = c <= fz.fc;
       if (rowFz) st.push(`position:sticky;top:${topOff[r]}px;z-index:${colFz ? 2 : 1}`);
       if (colFz) st.push(`position:sticky;left:${leftOff[c]}px;z-index:${rowFz ? 2 : 1}`);
@@ -542,7 +567,7 @@ function toggleBold() {
 }
 function mergeSel() {
   if (!rects.length) return toast("セルを選んでください");
-  const sh = curSheet(), x = expandMerges(sh, lastRect()); if (x.r1 === x.r2 && x.c1 === x.c2) return toast("2 セル以上を選んでください");
+  const sh = curSheet(), x = plainRect(expandMerges(sh, lastRect())); if (x.r1 === x.r2 && x.c1 === x.c2) return toast("2 セル以上を選んでください");
   mutate(() => { sh.merges = (sh.merges || []).filter((m) => { const y = parseRect(m); return !(y && y.r1 <= x.r2 && y.r2 >= x.r1 && y.c1 <= x.c2 && y.c2 >= x.c1); });
     sh.merges.push(rectText(x)); sh.cells = sh.cells || {};
     for (let r = x.r1; r <= x.r2; r++) for (let c = x.c1; c <= x.c2; c++) if (r !== x.r1 || c !== x.c1) { const cell = sh.cells[colName(c) + r]; if (cell) delete cell.v; }
@@ -580,7 +605,8 @@ $("tComment").onclick = () => openComposer();
 const cellOf = (e) => e.target.closest && e.target.closest("td");
 let drag = null; // {kind: 'rzc'|'rzr'|'reorder', ...}
 function headRect(type, a, b) { const { R, C } = dims(curSheet()); const lo = Math.min(a, b), hi = Math.max(a, b);
-  return type === "col" ? { r1: 1, c1: lo, r2: R, c2: hi } : { r1: lo, c1: 1, r2: hi, c2: C }; } // 結合は広げない（列・行そのものを選ぶ）
+  return type === "col" ? { r1: 1, c1: lo, r2: R, c2: hi, ax: "col" } : { r1: lo, c1: 1, r2: hi, c2: C, ax: "row" }; } // 結合は広げない（列・行そのものを選ぶ）
+const inWholeSel = (type, n) => { const { R, C } = dims(curSheet()); return rects.some((x) => type === "col" ? x.r1 === 1 && x.r2 === R && n >= x.c1 && n <= x.c2 : x.c1 === 1 && x.c2 === C && n >= x.r1 && n <= x.r2); };
 function isWholeSelected(type, n) { const { R, C } = dims(curSheet()); const x = rects.length === 1 ? rects[0] : null; if (!x) return false;
   return type === "col" ? x.r1 === 1 && x.r2 === R && n >= x.c1 && n <= x.c2 : x.c1 === 1 && x.c2 === C && n >= x.r1 && n <= x.r2; }
 // セル（結合は広げず、そのセル自身）にかかっている最優先のスレッド
@@ -603,14 +629,14 @@ $("grid").addEventListener("mousedown", (e) => {
   if (th && (th.dataset.col || th.dataset.row)) {
     const type = th.dataset.col ? "col" : "row", n = +(th.dataset.col || th.dataset.row);
     if (isWholeSelected(type, n) && !e.shiftKey && !e.ctrlKey && !e.metaKey) { const x = rects[0]; drag = { kind: "reorder", type, a: type === "col" ? x.c1 : x.r1, b: type === "col" ? x.c2 : x.r2, x0: e.clientX, y0: e.clientY, on: false, t: null }; e.preventDefault(); return; }
-    if (e.shiftKey && hAnchor && hAnchor.type === type) rects = [headRect(type, hAnchor.n, n)];
+    if (e.shiftKey && hAnchor && hAnchor.type === type && rects.length) rects[rects.length - 1] = headRect(type, hAnchor.n, n); // Shift = 直前の範囲だけ広げる（Ctrl で足した他の範囲は残す）
     else { hAnchor = { type, n }; const x = headRect(type, n, n); if (e.ctrlKey || e.metaKey) rects.push(x); else rects = [x]; }
     anchor = null; activeId = null; refreshSel(); renderBubbles(); e.preventDefault(); return;
   }
   const td = cellOf(e); if (!td) return;
   const r = +td.dataset.r, c = +td.dataset.c, here = expandMerges(sh, { r1: r, c1: c, r2: r, c2: c });
   if (e.shiftKey && anchor && rects.length) { rects[rects.length - 1] = expandMerges(sh, { r1: Math.min(anchor.r, r), c1: Math.min(anchor.c, c), r2: Math.max(anchor.r, r), c2: Math.max(anchor.c, c) }); }
-  else { anchor = { r, c }; if (e.ctrlKey || e.metaKey) rects.push(here); else rects = [here]; dragging = true; }
+  else { anchor = { r, c }; hAnchor = null; if (e.ctrlKey || e.metaKey) rects.push(here); else rects = [here]; dragging = true; }
   const hit = threadAt(sh.name, r, c);
   const nid = hit ? hit.id : null; if (nid !== activeId) { activeId = nid; renderList(); renderBubbles(); }
   refreshSel(); e.preventDefault();
@@ -644,15 +670,15 @@ window.addEventListener("mouseup", () => {
 });
 $("grid").addEventListener("contextmenu", (e) => {
   e.preventDefault(); const th = e.target.closest("th"), td = cellOf(e);
-  if (th && th.dataset.col) { const c = +th.dataset.col; if (!isWholeSelected("col", c)) { rects = [headRect("col", c, c)]; hAnchor = { type: "col", n: c }; refreshSel(); } return showMenu(e.clientX, e.clientY, colItems()); }
-  if (th && th.dataset.row) { const r = +th.dataset.row; if (!isWholeSelected("row", r)) { rects = [headRect("row", r, r)]; hAnchor = { type: "row", n: r }; refreshSel(); } return showMenu(e.clientX, e.clientY, rowItems()); }
+  if (th && th.dataset.col) { const c = +th.dataset.col; if (!inWholeSel("col", c)) { rects = [headRect("col", c, c)]; hAnchor = { type: "col", n: c }; refreshSel(); } return showMenu(e.clientX, e.clientY, colItems()); }
+  if (th && th.dataset.row) { const r = +th.dataset.row; if (!inWholeSel("row", r)) { rects = [headRect("row", r, r)]; hAnchor = { type: "row", n: r }; refreshSel(); } return showMenu(e.clientX, e.clientY, rowItems()); }
   if (td) { const r = +td.dataset.r, c = +td.dataset.c; if (!inRects(r, c)) { rects = [expandMerges(curSheet(), { r1: r, c1: c, r2: r, c2: c })]; anchor = { r, c }; refreshSel(); }
     showMenu(e.clientX, e.clientY, [{ label: "この範囲にコメント", fn: () => openComposer() }, { label: "セルを編集", fn: () => startEdit(+td.dataset.r, +td.dataset.c) }, "-",
       { label: "セルを結合", fn: mergeSel }, { label: "結合を解除", fn: unmergeSel }, { label: "背景色…", fn: () => showPal($("tBg"), "bg") }, { label: "文字色…", fn: () => showPal($("tFg"), "color") }, { label: "太字 切替", fn: toggleBold }, "-",
       ...rowItems(), "-", ...colItems()]); }
 });
 $("range").addEventListener("input", () => {
-  rects = parseRanges($("range").value).filter((p) => p.sheet === curSheet().name).map((p) => p.rect);
+  rects = parseRanges($("range").value).filter((p) => p.sheet === curSheet().name).map((p) => clipRect(p.rect, curSheet()));
   const keep = $("range").value; refreshSel(); $("range").value = keep;
 });
 $("range").addEventListener("blur", () => refreshSel());
@@ -674,11 +700,13 @@ function startEdit(r, c, initial) {
   editing = { r, c, ta, orig, done: false };
   ta.onkeydown = (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.altKey) { e.preventDefault(); endEdit(true); moveSel(1, 0); }
-    else if (e.key === "Enter" && e.altKey) { e.preventDefault(); const p = ta.selectionStart; ta.value = ta.value.slice(0, p) + "\n" + ta.value.slice(ta.selectionEnd); ta.setSelectionRange(p + 1, p + 1); }
+    else if (e.key === "Enter" && (e.altKey || e.shiftKey)) { e.preventDefault(); const p = ta.selectionStart; ta.value = ta.value.slice(0, p) + "\n" + ta.value.slice(ta.selectionEnd); ta.setSelectionRange(p + 1, p + 1); ta.dispatchEvent(new Event("input")); }
     else if (e.key === "Escape") { e.preventDefault(); endEdit(false); }
     else if (e.key === "Tab") { e.preventDefault(); endEdit(true); moveSel(0, e.shiftKey ? -1 : 1); }
     e.stopPropagation();
   };
+  const grow = () => { ta.style.height = "auto"; ta.style.height = Math.max(b.height, 24, ta.scrollHeight + 2) + "px"; };
+  ta.addEventListener("input", grow); grow();
   ta.onblur = () => endEdit(true);
 }
 function parseValue(t) { if (t.startsWith("=")) return t; if (/^-?(0|[1-9]\d*)(\.\d+)?$/.test(t.trim())) return Number(t.trim()); return t; }

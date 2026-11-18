@@ -51,9 +51,15 @@ def add_comments(wb: Workbook, threads: list[dict]) -> int:
     n = 0
     for t in threads:
         sheet, _, rng = (t.get("range") or "").rpartition("!")
-        first = rng.split(":")[0]
+        first = rng.split(",")[0].strip()  # 複数範囲は最初の範囲の左上
+        if re.fullmatch(r"[A-Z]+:[A-Z]+", first):  # 列の範囲 B:D -> B1
+            first = first.split(":")[0] + "1"
+        elif re.fullmatch(r"\d+:\d+", first):  # 行の範囲 2:4 -> A2
+            first = "A" + first.split(":")[0]
+        else:
+            first = first.split(":")[0]
         if not ADDR.match(first):
-            continue  # 行・列・シート全体などは対象外
+            continue  # シート全体などは対象外
         ws = wb[sheet[:31]] if sheet and sheet[:31] in wb.sheetnames else wb.worksheets[0]
         who = {"human": "人", "agent": "AI"}
         body = "\n".join(f"{who.get(m.get('author'), m.get('author'))}: {m.get('text', '')}" for m in t.get("messages", []))
@@ -97,7 +103,7 @@ def main(src: str, dst: str, comments: bool = False, review: str | None = None) 
             cell.alignment = Alignment(
                 horizontal=c.get("align"),
                 vertical={"middle": "center"}.get(c.get("valign", "middle"), c.get("valign")),
-                wrap_text=bool(c.get("wrap")),
+                wrap_text=bool(c.get("wrap")) or (isinstance(v, str) and "\n" in v),  # 改行を含むセルは折り返し ON（行の高さは Excel の自動に任せる。rowHeights 指定は上で尊重）
             )
             if c.get("numFmt"):
                 cell.number_format = c["numFmt"]

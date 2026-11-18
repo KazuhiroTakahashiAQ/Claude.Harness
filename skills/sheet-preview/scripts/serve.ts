@@ -3,6 +3,7 @@
 //   node serve.ts <name>.sheet.json [...] [--task <タスク名>] [--port N]
 //   node serve.ts a.sheet.json b.sheet.json [dir ...]     # 複数ファイル。dir は直下の *.sheet.json を列挙して登録
 //   node serve.ts                                         # ファイル指定なし（一覧だけ開く）
+//   node serve.ts --lint <name>.sheet.json [...]          # セル値・コメント本文で「。」の直後に改行がない箇所を警告して終了（あれば終了コード 1）
 //   node serve.ts --stop                                  # 常駐しているハブを止める
 //   node serve.ts <...> --render out.html                 # サーバなしの静的 HTML を書いて終了（全ファイルを 1 枚に埋め込み）
 //
@@ -57,6 +58,26 @@ const flag = (name: string): string | undefined => {
 const has = (name: string) => args.includes(name);
 const expand = (p: string) => (p === "~" || p.startsWith("~/") ? path.join(os.homedir(), p.slice(1)) : p);
 const inputs = args.filter((a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.has(args[i - 1])));
+
+// --lint: 「。」の直後が改行でない箇所（文末の「。」は除く）を警告する。サーバは起動しない
+if (has("--lint")) {
+  let bad = 0;
+  const check = (where: string, v: unknown) => {
+    if (typeof v !== "string") return;
+    for (const m of v.matchAll(/。(?![\n]|$)/g)) {
+      bad++;
+      console.log(`${where}: 「。」の後に改行がない: …${v.slice(Math.max(0, m.index! - 12), m.index! + 8).replace(/\n/g, "\\n")}…`);
+    }
+  };
+  for (const file of inputs.map((p) => path.resolve(expand(p)))) {
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    for (const sh of data.sheets ?? []) for (const [a, c] of Object.entries<any>(sh.cells ?? {})) check(`${path.basename(file)} ${sh.name}!${a}`, c?.v);
+    const rv = flag("--review") ?? file.replace(/\.sheet\.json$/, "") + ".review.json";
+    if (fs.existsSync(rv)) for (const t of JSON.parse(fs.readFileSync(rv, "utf8")).threads ?? []) for (const m of t.messages ?? []) check(`${path.basename(rv)} ${t.id}`, m.text);
+  }
+  console.log(bad ? `警告 ${bad} 件` : "OK");
+  process.exit(bad ? 1 : 0);
+}
 
 const DEFAULT_PORT = 8765;
 const portArg = flag("--port");
@@ -229,7 +250,17 @@ const rectText = (r: Rect): string => (r.c1 === r.c2 && r.r1 === r.r2 ? `${colNa
 const bareName = (n: string) => /^[\w぀-ヿ㐀-鿿]+$/.test(n);
 const quoteSheet = (n: string) => (bareName(n) ? n : `'${n.replace(/'/g, "''")}'`);
 
-type Part = { sheet: string; rect: Rect | null; star: boolean; raw: string };
+type Part = { sheet: string; rect: Rect | null; star: boolean; raw: string; ax?: "col" | "row" };
+const AXMAX_R = 1048576, AXMAX_C = 16384;
+// 列範囲 "B:D" / 行範囲 "2:4"（review の range 用。セル結合などでは使わない）
+function parseAxis(t: string): { rect: Rect; ax: "col" | "row" } | null {
+  let m = /^\$?([A-Za-z]{1,3}):\$?([A-Za-z]{1,3})$/.exec(t.trim());
+  if (m) { const a = colNum(m[1]), b = colNum(m[2]); return { ax: "col", rect: { c1: Math.min(a, b), c2: Math.max(a, b), r1: 1, r2: AXMAX_R } }; }
+  m = /^\$?(\d{1,7}):\$?(\d{1,7})$/.exec(t.trim());
+  if (m) { const a = Number(m[1]), b = Number(m[2]); return { ax: "row", rect: { r1: Math.min(a, b), r2: Math.max(a, b), c1: 1, c2: AXMAX_C } }; }
+  return null;
+}
+const axText = (r: Rect, ax: "col" | "row") => (ax === "col" ? `${colName(r.c1)}:${colName(r.c2)}` : `${r.r1}:${r.r2}`);
 // 範囲文字列 "明細!B2:D5, F3, 集計!*" を分解。シート名は直前の指定を引き継ぐ。解釈できない部分は rect=null / star=false で raw を残す
 function splitRanges(text: string, defSheet: string): Part[] {
   const parts: string[] = [];
@@ -248,7 +279,7 @@ function splitRanges(text: string, defSheet: string): Part[] {
     const m = /^(?:'((?:[^']|'')*)'|([^!']+))!(.*)$/.exec(raw);
     if (m) { sheet = m[1] !== undefined ? m[1].replace(/''/g, "'") : m[2].trim(); body = m[3].trim(); }
     if (body === "*") out.push({ sheet, rect: null, star: true, raw });
-    else out.push({ sheet, rect: parseRect(body), star: false, raw });
+    else { const x = parseAxis(body); out.push(x ? { sheet, rect: x.rect, star: false, raw, ax: x.ax } : { sheet, rect: parseRect(body), star: false, raw }); }
   }
   return out;
 }
@@ -256,7 +287,7 @@ function joinRanges(parts: Part[], defSheet: string): string {
   let prev = defSheet;
   let first = true;
   return parts.map((p) => {
-    const body = p.star ? "*" : p.rect ? rectText(p.rect) : p.raw;
+    const body = p.star ? "*" : p.rect && p.ax ? axText(p.rect, p.ax) : p.rect ? rectText(p.rect) : p.raw;
     const pre = first || p.sheet !== prev ? quoteSheet(p.sheet) + "!" : "";
     first = false;
     prev = p.sheet;
@@ -349,6 +380,7 @@ function remapThreads(threads: any[], effs: Eff[], defSheet: () => string): bool
         for (const p of parts) {
           if (p.sheet !== ef.sheet || !p.rect) { keep.push(p); continue; }
           const rr = p.rect;
+          if (p.ax && (p.ax === "col") === (ef.axis === "row")) { keep.push(p); continue; } // 列範囲に行操作（行範囲に列操作）は影響しない
           const sp = ef.axis === "row" ? mapSpan(ef.kind, ef.at, ef.count, rr.r1, rr.r2) : mapSpan(ef.kind, ef.at, ef.count, rr.c1, rr.c2);
           touched = true;
           if (!sp) continue;
