@@ -6,7 +6,7 @@
       "name": "明細",
       "colWidths": { "A": 90, "B": 160, "C": 80, "D": 100, "E": 110, "F": 200 },
       "rowHeights": { "1": 36 },
-      "freeze": "A3",
+      "freeze": "B3",
       "merges": ["A1:F1"],
       "cells": {
         "A1": { "v": "売上明細", "bg": "#1f3a5f", "color": "#ffffff", "bold": true, "align": "center", "size": 16 },

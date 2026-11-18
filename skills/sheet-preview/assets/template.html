@@ -5,52 +5,87 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sheet-preview</title>
 <style>
-:root{--bg:#f6f7f9;--panel:#fff;--line:#d0d5dd;--text:#1d2430;--mute:#667085;--accent:#2563eb;--sel:rgba(37,99,235,.18);--head:#eef1f5}
-@media (prefers-color-scheme: dark){:root{--bg:#14171c;--panel:#1c2027;--line:#3a414d;--text:#e6e9ef;--mute:#98a2b3;--accent:#6ea0ff;--sel:rgba(110,160,255,.28);--head:#262b34}}
+:root{--bg:#f6f7f9;--panel:#fff;--line:#d0d5dd;--text:#1d2430;--mute:#667085;--accent:#2563eb;--sel:rgba(37,99,235,.18);--head:#eef1f5;--warn:#fff4ce}
+@media (prefers-color-scheme: dark){:root{--bg:#14171c;--panel:#1c2027;--line:#3a414d;--text:#e6e9ef;--mute:#98a2b3;--accent:#6ea0ff;--sel:rgba(110,160,255,.28);--head:#262b34;--warn:#4a3d10}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100vh;display:flex;flex-direction:column}
-header{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header{display:flex;align-items:center;gap:12px;padding:6px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
 header h1{font-size:15px;margin:0}
 .badge{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--mute)}
 .badge.ok{color:#1a7f4b;border-color:#1a7f4b}.badge.ng{color:#b54708;border-color:#b54708}
+#toolbar{display:flex;align-items:center;gap:4px;padding:4px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+#toolbar .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+#toolbar button,button.b{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:2px 9px;border-radius:6px;cursor:pointer}
+#toolbar button:hover,button.b:hover{background:var(--head)}
+button.b.p,#toolbar button.p{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+.sw{display:inline-block;width:12px;height:12px;border:1px solid var(--line);vertical-align:-1px;margin-right:3px}
+#banner{display:none;padding:6px 16px;background:var(--warn);border-bottom:1px solid var(--line);font-size:13px}
+#banner.on{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 main{flex:1;display:flex;min-height:0}
 #left{flex:1;display:flex;flex-direction:column;min-width:0}
-#tabs{display:flex;gap:2px;padding:6px 12px 0;background:var(--bg)}
-#tabs button{border:1px solid var(--line);border-bottom:none;background:var(--head);color:var(--text);padding:4px 14px;border-radius:6px 6px 0 0;cursor:pointer;font:inherit}
-#tabs button.on{background:var(--panel);font-weight:600}
-#gridwrap{flex:1;overflow:auto;background:var(--panel);margin:0 12px 12px;border:1px solid var(--line);user-select:none}
+#gridhost{flex:1;position:relative;min-height:0;margin:8px 12px 0}
+#gridwrap{position:absolute;inset:0;overflow:auto;background:var(--panel);border:1px solid var(--line);user-select:none}
 table{border-collapse:separate;border-spacing:0;table-layout:fixed}
 td,th{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:2px 6px;overflow:hidden;white-space:nowrap;text-overflow:clip;position:relative;color:#111}
 td{background:#fff}
 th{background:var(--head);color:var(--mute);font-weight:500;text-align:center;font-size:12px;position:sticky;top:0;z-index:2;cursor:pointer}
-th.rh{left:0;z-index:3;position:sticky}
-th.corner{left:0;top:0;z-index:4}
+th.rh{left:0;z-index:3}
+th.corner{left:0;top:0;z-index:5}
+th.sel{background:#c7d7f7;color:#111}
+th.drop-l{box-shadow:inset 3px 0 0 var(--accent)}th.drop-r{box-shadow:inset -3px 0 0 var(--accent)}
+th.drop-t{box-shadow:inset 0 3px 0 var(--accent)}th.drop-b{box-shadow:inset 0 -3px 0 var(--accent)}
+.fr-last{border-bottom:2px solid #667085!important}.fc-last{border-right:2px solid #667085!important}
+.rz-c{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:6}
+.rz-r{position:absolute;left:0;bottom:-3px;height:7px;width:100%;cursor:row-resize;z-index:6}
 td.sel::after{content:"";position:absolute;inset:0;background:var(--sel);outline:1px solid var(--accent);outline-offset:-1px;pointer-events:none}
 td.mark{box-shadow:inset 0 0 0 2px #f59e0b}
 td.mark.done{box-shadow:inset 0 0 0 2px #22a06b}
 td.mark.q{box-shadow:inset 0 0 0 2px #8b5cf6}
 td.hl{box-shadow:inset 0 0 0 3px #ef4444}
-#right{width:380px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
-#right section{padding:10px 12px;border-bottom:1px solid var(--line)}
+#ov{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:10}
+#ov svg{position:absolute;inset:0;width:100%;height:100%}
+.bubble{position:absolute;width:240px;background:var(--panel);border:1px solid var(--line);border-left:4px solid #f59e0b;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:6px 8px;pointer-events:auto;font-size:13px}
+.bubble.done{border-left-color:#22a06b}.bubble.q{border-left-color:#8b5cf6}.bubble.new{border-left-color:var(--accent)}
+.bubble.active{box-shadow:0 0 0 2px var(--accent),0 4px 14px rgba(0,0,0,.18)}
+.bubble .t{white-space:pre-wrap;margin:2px 0}
+.bubble .a{white-space:pre-wrap;color:var(--mute);border-left:3px solid #22a06b;padding-left:6px;margin-top:4px}
+.bubble .x{float:right;cursor:pointer;color:var(--mute);border:none;background:none;font-size:16px;line-height:1;padding:0 2px}
+.bubble textarea{min-height:56px}
+#editor{position:absolute;z-index:20;font:inherit;color:#111;background:#fff;border:2px solid var(--accent);border-radius:0;padding:2px 6px;resize:none;min-height:0;overflow:auto}
+#tabs{display:flex;align-items:flex-end;gap:2px;padding:0 12px 6px;overflow-x:auto;flex:none}
+#tabs .tab{border:1px solid var(--line);border-top:none;background:var(--head);color:var(--text);padding:3px 14px;border-radius:0 0 6px 6px;cursor:pointer;font:inherit;white-space:nowrap}
+#tabs .tab.on{background:var(--panel);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+#tabs .tab.over{outline:2px solid var(--accent)}
+#tabs input{width:110px;padding:1px 4px}
+#menu{position:fixed;z-index:50;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);padding:4px;min-width:180px;display:none}
+#menu div{padding:4px 12px;cursor:pointer;border-radius:4px;white-space:nowrap}
+#menu div:hover{background:var(--head)}
+#menu div.dis{opacity:.4;pointer-events:none}
+#menu hr{border:none;border-top:1px solid var(--line);margin:3px 0}
+#pal{position:fixed;z-index:51;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);padding:8px;display:none;width:178px}
+#pal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+#pal .g i{height:20px;border:1px solid var(--line);border-radius:3px;cursor:pointer}
+#right{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+#right section{padding:8px 12px;border-bottom:1px solid var(--line)}
 label{font-size:12px;color:var(--mute);display:block;margin-bottom:2px}
 input,textarea,select{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
 textarea{resize:vertical;min-height:64px}
-button.b{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:4px 10px;border-radius:6px;cursor:pointer}
-button.b.p{background:var(--accent);border-color:var(--accent);color:#fff}
-button.b:disabled{opacity:.4;cursor:default}
 .row{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
 #list{flex:1;overflow:auto;padding:0}
-.item{padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.item{padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer;border-left:4px solid transparent}
 .item:hover{background:var(--head)}
+.item.on{border-left-color:var(--accent);background:var(--head)}
+.item.gone{opacity:.65}
 .item .r{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
 .item .i{white-space:pre-wrap;margin:2px 0}
 .item .a{white-space:pre-wrap;font-size:13px;color:var(--mute);border-left:3px solid #22a06b;padding-left:8px;margin-top:4px}
 .st{font-size:11px;padding:0 6px;border-radius:8px;margin-left:6px}
-.st.未対応{background:#fef0c7;color:#93370d}.st.対応済{background:#d1fadf;color:#05603a}.st.質問{background:#ebe9fe;color:#5925dc}
+.st.未対応{background:#fef0c7;color:#93370d}.st.対応済{background:#d1fadf;color:#05603a}.st.質問{background:#ebe9fe;color:#5925dc}.st.削除{background:#fee4e2;color:#b42318}
 .hint{font-size:12px;color:var(--mute)}
-#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2430;color:#fff;padding:6px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2430;color:#fff;padding:6px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
 #toast.on{opacity:1}
-@media (max-width:800px){main{flex-direction:column}#right{width:auto;border-left:none;border-top:1px solid var(--line);max-height:50vh}}
+@media (max-width:800px){main{flex-direction:column}#right{width:auto;border-left:none;border-top:1px solid var(--line);max-height:45vh}}
 </style>
 </head>
 <body>
@@ -58,26 +93,49 @@ button.b:disabled{opacity:.4;cursor:default}
   <h1 id="title"></h1>
   <span class="badge" id="mode"></span>
   <span class="badge" id="conn"></span>
+  <span class="badge" id="dirty" style="display:none">未保存</span>
   <span style="flex:1"></span>
-  <button class="b" id="reload" title="sheet.json と review.json を読み直す">再読み込み</button>
+  <button class="b" id="reload" title="sheet.json と review.json を読み直す（画面の未保存の変更は失われる）">再読み込み</button>
 </header>
+<div id="toolbar">
+  <button id="tUndo" title="元に戻す (Ctrl+Z)">元に戻す</button><button id="tRedo" title="やり直し (Ctrl+Shift+Z)">やり直し</button>
+  <span class="sep"></span>
+  <button id="tBold" title="太字"><b>B</b></button>
+  <button data-align="left" title="左寄せ">左</button><button data-align="center" title="中央">中</button><button data-align="right" title="右寄せ">右</button>
+  <button id="tBg" title="背景色"><span class="sw" style="background:#dbe5f1"></span>背景</button>
+  <button id="tFg" title="文字色"><span class="sw" style="background:#c92a2a"></span>文字</button>
+  <span class="sep"></span>
+  <button id="tMerge">結合</button><button id="tUnmerge">結合解除</button>
+  <span class="sep"></span>
+  <button id="tRow">行 ▾</button><button id="tCol">列 ▾</button><button id="tFreeze">固定 ▾</button>
+  <span class="sep"></span>
+  <button id="tComment" title="選択範囲へのコメント（エージェントへの指示）">コメント</button>
+  <span style="flex:1"></span>
+  <label style="display:inline-flex;gap:4px;align-items:center;margin:0 6px"><input type="checkbox" id="showAll" style="width:auto">吹き出しを全部表示</label>
+  <button class="p" id="save" title="Ctrl+S">保存</button>
+  <button id="copySheet">sheet.json をコピー</button>
+  <button id="copy">指示をコピー</button>
+</div>
+<div id="banner"></div>
 <main>
   <div id="left">
+    <div id="gridhost">
+      <div id="gridwrap"><table id="grid"></table></div>
+      <div id="ov"><svg id="lines"></svg></div>
+    </div>
     <div id="tabs"></div>
-    <div id="gridwrap"><table id="grid"></table></div>
   </div>
   <aside id="right">
     <section>
-      <label>選択範囲（ドラッグ / Shift で拡張 / Ctrl・Cmd で追加。列・行の見出しクリックで列・行ごと）</label>
+      <label>選択範囲（ドラッグ / Shift で拡張 / Ctrl・Cmd で追加。見出しクリックで列・行ごと）</label>
       <input id="range" placeholder="例: 明細!B2:D5, F3（直接入力もできる）">
-      <label style="margin-top:8px">指示</label>
+      <label style="margin-top:8px">指示（エージェントへ。セルの文字を直接直すときは、セルをダブルクリック）</label>
       <textarea id="instr" placeholder="この範囲をどうしたいか"></textarea>
       <div class="row"><button class="b p" id="add">一覧に追加</button><span class="hint" id="selinfo"></span></div>
     </section>
     <section>
       <div class="row" style="margin-top:0">
-        <button class="b p" id="save">保存</button>
-        <button class="b" id="copy">指示をコピー</button>
+        <span class="hint">コメント一覧</span>
         <select id="filter" style="width:auto"><option value="">すべて</option><option>未対応</option><option>対応済</option><option>質問</option></select>
       </div>
       <div class="hint" id="savemsg" style="margin-top:4px"></div>
@@ -85,13 +143,19 @@ button.b:disabled{opacity:.4;cursor:default}
     <div id="list"></div>
   </aside>
 </main>
+<div id="menu"></div>
+<div id="pal"></div>
 <div id="toast"></div>
 <script>
 const BOOT = /*__BOOT__*/null;
 let sheet = BOOT.sheet, review = BOOT.review, serverOk = !!BOOT.server;
-const LS_KEY = "sheet-preview:" + BOOT.key;
+let base = { sheet: BOOT.ver && BOOT.ver.sheet, review: BOOT.ver && BOOT.ver.review };
+let dirty = { sheet: false, review: false };
+const LS_KEY = "sheet-preview:v2:" + BOOT.key;
 const $ = (id) => document.getElementById(id);
 const tryLS = (fn) => { try { return fn(); } catch { return undefined; } };
+const esc = (s) => String(s).replace(/[&<>]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x]));
+const HDR_H = 24, RH_W = 44;
 
 // ---- A1 ヘルパー ----
 const colName = (n) => { let s = ""; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
@@ -104,28 +168,35 @@ const parseRect = (t) => {
 };
 const rectText = (x) => (x.r1 === x.r2 && x.c1 === x.c2) ? colName(x.c1) + x.r1 : colName(x.c1) + x.r1 + ":" + colName(x.c2) + x.r2;
 const quoteSheet = (n) => /^[A-Za-z0-9_぀-ヿ一-鿿]+$/.test(n) ? n : "'" + n.replace(/'/g, "''") + "'";
-// "明細!B2:D5, F3, 集計!A1" -> [{sheet, rect}]
-function parseRanges(text) {
+// "明細!B2:D5, F3, 集計!A1" -> パーツ列 [{sheet, rect|null, raw}]。解釈できないパーツは rect:null で残す
+function splitRanges(text) {
   const out = []; let cur = null;
   for (let part of text.split(",")) {
     part = part.trim(); if (!part) continue;
     const m = /^(?:'((?:[^']|'')+)'|([^!']+))!(.+)$/.exec(part);
     if (m) { cur = m[1] ? m[1].replace(/''/g, "'") : m[2]; part = m[3]; }
-    const r = parseRect(part);
-    if (r) out.push({ sheet: cur ?? sheet.sheets[0].name, rect: r });
+    out.push({ sheet: cur ?? sheet.sheets[0].name, rect: parseRect(part), raw: part });
   }
   return out;
+}
+const parseRanges = (text) => splitRanges(text).filter((p) => p.rect);
+function joinRanges(parts) {
+  let last = null, out = [];
+  for (const p of parts) { const t = p.rect ? rectText(p.rect) : p.raw; out.push((p.sheet !== last ? quoteSheet(p.sheet) + "!" : "") + t); last = p.sheet; }
+  return out.join(", ");
 }
 
 // ---- シート構造 ----
 let cur = 0; // 表示中シート index
+const curSheet = () => sheet.sheets[cur];
 function dims(sh) {
-  let maxR = sh.rows || 0, maxC = sh.cols || 0;
+  let maxR = 0, maxC = 0;
   const note = (r, c) => { if (r > maxR) maxR = r; if (c > maxC) maxC = c; };
   for (const a of Object.keys(sh.cells || {})) { const p = parseAddr(a); if (p) note(p.r, p.c); }
   for (const m of sh.merges || []) { const x = parseRect(m); if (x) note(x.r2, x.c2); }
   for (const k of Object.keys(sh.colWidths || {})) note(0, colNum(k));
-  return { R: Math.max(maxR, 10), C: Math.max(maxC, 6) };
+  for (const k of Object.keys(sh.rowHeights || {})) note(+k, 0);
+  return { R: Math.max(maxR, sh.rows || 0, sh.rows ? 1 : 10), C: Math.max(maxC, sh.cols || 0, sh.cols ? 1 : 6) };
 }
 function mergeMap(sh) {
   const origin = {}, covered = new Set();
@@ -144,45 +215,120 @@ function expandMerges(sh, rect) { // 結合セルを部分選択しないよう�
       x.r1 = Math.min(x.r1, m.r1); x.r2 = Math.max(x.r2, m.r2); x.c1 = Math.min(x.c1, m.c1); x.c2 = Math.max(x.c2, m.c2); ch = true; } } }
   return x;
 }
+function parseFreeze(sh) { const p = sh.freeze ? parseAddr(sh.freeze) : null; return p ? { fr: p.r - 1, fc: p.c - 1 } : { fr: 0, fc: 0 }; }
+function setFreezeVal(sh, fr, fc) { if (fr <= 0 && fc <= 0) delete sh.freeze; else sh.freeze = colName(Math.max(fc, 0) + 1) + (Math.max(fr, 0) + 1); }
+const cwOf = (sh, c) => (sh.colWidths || {})[colName(c)] ?? sh.defaultColWidth ?? 90;
+const rhOf = (sh, r) => (sh.rowHeights || {})[r] ?? sh.defaultRowHeight ?? 24;
+
+// ---- 履歴（Undo / Redo） ----
+let undoStack = [], redoStack = [];
+const snap = () => JSON.stringify({ sheet, review });
+function pushUndo() { undoStack.push(snap()); if (undoStack.length > 200) undoStack.shift(); redoStack = []; }
+function restore(s) { const o = JSON.parse(s); sheet = o.sheet; review = o.review; rects = []; anchor = null; if (cur >= sheet.sheets.length) cur = sheet.sheets.length - 1; recomputeDirty(); afterChange(); }
+function undo() { if (!undoStack.length) return toast("これ以上戻せません"); redoStack.push(snap()); restore(undoStack.pop()); }
+function redo() { if (!redoStack.length) return toast("やり直しはありません"); undoStack.push(snap()); restore(redoStack.pop()); }
+// 変更はすべてここを通す。sheet / review のどちらが変わったかで未保存フラグを立てる
+function mutate(fn) {
+  pushUndo(); const r = fn();
+  if (r === false) { undoStack.pop(); return false; }
+  recomputeDirty(); afterChange(); return true;
+}
+// 未保存かどうかは「最後に読み込んだ / 保存した内容」との差で決める（Undo で元に戻れば未保存でなくなる）
+let saved = { sheet: JSON.stringify(sheet), review: JSON.stringify(review) };
+function recomputeDirty() { dirty.sheet = JSON.stringify(sheet) !== saved.sheet; dirty.review = JSON.stringify(review) !== saved.review; }
+function afterChange() { persist(); render(); }
+
+// ---- 行・列の構造変更（共通の写像で、セル・結合・幅/高さ・固定・指示の範囲を一度に追従） ----
+const mapIns = (p, n) => (i) => (i >= p ? i + n : i);
+const mapDel = (a, b) => (i) => (i < a ? i : i <= b ? null : i - (b - a + 1));
+function mapMove(a, b, t) { const k = b - a + 1;
+  if (t > b) return (i) => (i >= a && i <= b ? i - a + (t - k) : i > b && i < t ? i - k : i);
+  return (i) => (i >= a && i <= b ? i - a + t : i >= t && i < a ? i + k : i); }
+function mapSpan(a, b, f) { let lo = null, hi = null; for (let i = a; i <= b; i++) { const m = f(i); if (m == null) continue; if (lo === null || m < lo) lo = m; if (hi === null || m > hi) hi = m; } return lo === null ? null : [lo, hi]; }
+function mapRectAxis(x, axis, f) { // x の axis 方向を写像。全部消えたら null
+  const s = axis === "r" ? mapSpan(x.r1, x.r2, f) : mapSpan(x.c1, x.c2, f); if (!s) return null;
+  return axis === "r" ? { ...x, r1: s[0], r2: s[1] } : { ...x, c1: s[0], c2: s[1] };
+}
+function applyAxis(sh, axis, f, kind, n) {
+  const { R, C } = dims(sh); sh.rows = R; sh.cols = C;
+  const cells = {}; // セル
+  for (const [a, v] of Object.entries(sh.cells || {})) { const p = parseAddr(a); if (!p) continue;
+    const r = axis === "r" ? f(p.r) : p.r, c = axis === "c" ? f(p.c) : p.c; if (r == null || c == null) continue; cells[colName(c) + r] = v; }
+  sh.cells = cells;
+  const merges = []; // 結合
+  for (const m of sh.merges || []) { const x = parseRect(m); if (!x) continue; const y = mapRectAxis(x, axis, f);
+    if (y && (y.r1 !== y.r2 || y.c1 !== y.c2)) merges.push(rectText(y)); }
+  sh.merges = merges; if (!merges.length) delete sh.merges;
+  if (axis === "r" && sh.rowHeights) { const o = {}; for (const [k, v] of Object.entries(sh.rowHeights)) { const m = f(+k); if (m != null) o[m] = v; } sh.rowHeights = o; }
+  if (axis === "c" && sh.colWidths) { const o = {}; for (const [k, v] of Object.entries(sh.colWidths)) { const m = f(colNum(k)); if (m != null) o[colName(m)] = v; } sh.colWidths = o; }
+  const fz = parseFreeze(sh); // 固定
+  if (kind === "ins") { if (axis === "r" && n.at <= fz.fr) fz.fr += n.n; if (axis === "c" && n.at <= fz.fc) fz.fc += n.n; sh[axis === "r" ? "rows" : "cols"] += n.n; }
+  if (kind === "del") { const cnt = (lim) => { let k = 0; for (let i = n.a; i <= Math.min(n.b, lim); i++) k++; return k; };
+    if (axis === "r") fz.fr -= cnt(fz.fr); else fz.fc -= cnt(fz.fc); sh[axis === "r" ? "rows" : "cols"] = Math.max(1, sh[axis === "r" ? "rows" : "cols"] - (n.b - n.a + 1)); }
+  setFreezeVal(sh, fz.fr, fz.fc);
+}
+// 指示の range を追従。消えた範囲だけの指示は deleted: true（「対象が削除された」）にする
+function remapReview(sheetName, axis, f) {
+  for (const it of review.items) { if (it.deleted) continue;
+    const parts = splitRanges(it.range), out = []; let touched = false;
+    for (const p of parts) { if (p.sheet !== sheetName || !p.rect) { out.push(p); continue; }
+      touched = true; const y = mapRectAxis(p.rect, axis, f); if (y) out.push({ ...p, rect: y }); }
+    if (!touched) continue;
+    if (!out.length) it.deleted = true; else it.range = joinRanges(out); }
+}
+function structOp(axis, f, kind, n, ok) { // ok: 事前検証（false なら中止）
+  const sh = curSheet();
+  if (ok && !ok(sh)) return;
+  mutate(() => { applyAxis(sh, axis, f, kind, n); remapReview(sh.name, axis, f); rects = []; anchor = null; });
+}
+const insertRows = (at, n) => structOp("r", mapIns(at, n), "ins", { at, n });
+const insertCols = (at, n) => structOp("c", mapIns(at, n), "ins", { at, n });
+const deleteRows = (a, b) => structOp("r", mapDel(a, b), "del", { a, b });
+const deleteCols = (a, b) => structOp("c", mapDel(a, b), "del", { a, b });
+function moveCheck(axis, f, a, b, t) { // 結合をまたぐ移動は不可
+  return (sh) => { if (t >= a && t <= b + 1) return false;
+    for (const m of sh.merges || []) { const x = parseRect(m); if (!x) continue; const lo = axis === "r" ? x.r1 : x.c1, hi = axis === "r" ? x.r2 : x.c2;
+      const s = mapSpan(lo, hi, f); if (!s || s[1] - s[0] !== hi - lo) { toast("結合セルをまたぐ移動はできません"); return false; } }
+    return true; };
+}
+function moveAxis(axis, a, b, t) { const f = mapMove(a, b, t); const k = b - a + 1; const dest = t > b ? t - k : t;
+  structOp(axis, f, "move", null, moveCheck(axis, f, a, b, t));
+  const sh = curSheet(); const { R, C } = dims(sh);
+  rects = [axis === "r" ? { r1: dest, c1: 1, r2: dest + k - 1, c2: C } : { r1: 1, c1: dest, r2: R, c2: dest + k - 1 }];
+  refreshSel(); }
 
 // ---- 選択状態 ----
-let rects = [], anchor = null, dragging = false;
+let rects = [], anchor = null, dragging = false, hAnchor = null;
 const inRects = (r, c) => rects.some((x) => r >= x.r1 && r <= x.r2 && c >= x.c1 && c <= x.c2);
-function selText() {
-  if (!rects.length) return "";
-  return quoteSheet(sheet.sheets[cur].name) + "!" + rects.map(rectText).join(", ");
-}
-
+function selText() { return rects.length ? quoteSheet(curSheet().name) + "!" + rects.map(rectText).join(", ") : ""; }
+const lastRect = () => rects.length ? rects[rects.length - 1] : { r1: 1, c1: 1, r2: 1, c2: 1 };
 const fmtVal = (cell) => (typeof cell.v === "number" && /#,##0/.test(cell.numFmt || "")) ? cell.v.toLocaleString("ja-JP") : String(cell.v);
+
 // ---- 描画 ----
-let hlRanges = [];
-function marksFor(sname) { // セル -> 状態
+let hlRanges = [], activeId = null, composer = null;
+function marksFor(sname) {
   const m = {};
-  for (const it of review.items) for (const { sheet: s, rect } of parseRanges(it.range)) {
+  for (const it of review.items) { if (it.deleted) continue; for (const { sheet: s, rect } of parseRanges(it.range)) {
     if (s !== sname) continue;
     const cls = it.status === "対応済" ? "done" : it.status === "質問" ? "q" : "";
-    for (let r = rect.r1; r <= rect.r2; r++) for (let c = rect.c1; c <= rect.c2; c++) { const k = r + "," + c; if (!(k in m) || cls === "") m[k] = cls; }
-  }
+    for (let r = rect.r1; r <= rect.r2; r++) for (let c = rect.c1; c <= rect.c2; c++) { const k = r + "," + c; if (!(k in m) || cls === "") m[k] = cls; } } }
   return m;
-}
-function renderTabs() {
-  const t = $("tabs"); t.innerHTML = "";
-  sheet.sheets.forEach((s, i) => { const b = document.createElement("button"); b.textContent = s.name; if (i === cur) b.className = "on";
-    b.onclick = () => { cur = i; rects = []; anchor = null; render(); }; t.appendChild(b); });
 }
 function render() {
   if (cur >= sheet.sheets.length) cur = 0;
   $("title").textContent = sheet.title || "(無題)";
-  const mode = sheet.mode === "data" ? "実データ確認" : "スキーマ確認";
-  $("mode").textContent = mode;
-  renderTabs();
-  const sh = sheet.sheets[cur], { R, C } = dims(sh), { origin, covered } = mergeMap(sh), marks = marksFor(sh.name);
-  const cw = (c) => (sh.colWidths || {})[colName(c)] ?? sh.defaultColWidth ?? 90;
-  const rh = (r) => (sh.rowHeights || {})[r] ?? sh.defaultRowHeight ?? 24;
-  let h = "<colgroup><col style='width:44px'>"; for (let c = 1; c <= C; c++) h += `<col style='width:${cw(c)}px'>`; h += "</colgroup>";
-  h += "<tr><th class='corner'></th>"; for (let c = 1; c <= C; c++) h += `<th data-col='${c}'>${colName(c)}</th>`; h += "</tr>";
+  $("mode").textContent = sheet.mode === "data" ? "実データ確認" : "スキーマ確認";
+  const sh = curSheet(), { R, C } = dims(sh), { origin, covered } = mergeMap(sh), marks = marksFor(sh.name), fz = parseFreeze(sh);
+  const topOff = [0], leftOff = [0]; let acc = HDR_H; for (let r = 1; r <= fz.fr; r++) { topOff[r] = acc; acc += rhOf(sh, r); }
+  acc = RH_W; for (let c = 1; c <= fz.fc; c++) { leftOff[c] = acc; acc += cwOf(sh, c); }
+  let tw = RH_W; for (let c = 1; c <= C; c++) tw += cwOf(sh, c);
+  let h = `<colgroup><col style='width:${RH_W}px'>`; for (let c = 1; c <= C; c++) h += `<col style='width:${cwOf(sh, c)}px'>`; h += "</colgroup>";
+  h += `<tr style='height:${HDR_H}px'><th class='corner'></th>`;
+  for (let c = 1; c <= C; c++) { const st = c <= fz.fc ? `left:${leftOff[c]}px;z-index:4;` : ""; h += `<th data-col='${c}' class='${c === fz.fc ? "fc-last" : ""}' style='${st}'>${colName(c)}<div class='rz-c' data-rzc='${c}'></div></th>`; }
+  h += "</tr>";
   for (let r = 1; r <= R; r++) {
-    h += `<tr style='height:${rh(r)}px'><th class='rh' data-row='${r}'>${r}</th>`;
+    const rowFz = r <= fz.fr;
+    h += `<tr style='height:${rhOf(sh, r)}px'><th class='rh ${r === fz.fr ? "fr-last" : ""}' data-row='${r}' style='${rowFz ? `top:${topOff[r]}px;z-index:4` : ""}'>${r}<div class='rz-r' data-rzr='${r}'></div></th>`;
     for (let c = 1; c <= C; c++) {
       const k = r + "," + c; if (covered.has(k)) continue;
       const cell = (sh.cells || {})[colName(c) + r] || {}, m = origin[k];
@@ -192,19 +338,23 @@ function render() {
       if (cell.align) st.push("text-align:" + cell.align);
       if (cell.valign) st.push("vertical-align:" + cell.valign);
       if (cell.wrap) st.push("white-space:normal");
+      const colFz = c <= fz.fc;
+      if (rowFz) st.push(`position:sticky;top:${topOff[r]}px;z-index:${colFz ? 2 : 1}`);
+      if (colFz) st.push(`position:sticky;left:${leftOff[c]}px;z-index:${rowFz ? 2 : 1}`);
       const rect = m || { r1: r, c1: c, r2: r, c2: c };
-      let cls = ""; // 結合セルは範囲内のいずれかが対象ならマーク
+      let cls = "";
       for (let rr = rect.r1; rr <= rect.r2 && !cls; rr++) for (let cc = rect.c1; cc <= rect.c2; cc++) { const mk = marks[rr + "," + cc]; if (mk !== undefined) { cls = " mark" + (mk ? " " + mk : ""); break; } }
       const hl = hlRanges.some((x) => x.sheet === sh.name && x.rect.r1 <= rect.r2 && x.rect.r2 >= rect.r1 && x.rect.c1 <= rect.c2 && x.rect.c2 >= rect.c1);
-      const sel = inRects(r, c) ? " sel" : "";
+      const lastR = (m ? m.r2 : r) === fz.fr, lastC = (m ? m.c2 : c) === fz.fc;
       const span = m ? ` rowspan='${m.r2 - m.r1 + 1}' colspan='${m.c2 - m.c1 + 1}'` : "";
-      const v = cell.v === undefined || cell.v === null ? "" : fmtVal(cell).replace(/[&<>]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x]));
-      h += `<td data-r='${r}' data-c='${c}'${span} class='${(cls + sel + (hl ? " hl" : "")).trim()}' style='${st.join(";")}'>${v}</td>`;
+      const v = cell.v === undefined || cell.v === null ? "" : esc(fmtVal(cell));
+      h += `<td data-r='${r}' data-c='${c}'${span} class='${(cls + (hl ? " hl" : "") + (lastR ? " fr-last" : "") + (lastC ? " fc-last" : "")).trim()}' style='${st.join(";")}'>${v}</td>`;
     }
     h += "</tr>";
   }
+  $("grid").style.width = tw + "px";
   $("grid").innerHTML = h;
-  refreshSel(); renderList();
+  renderTabs(); refreshSel(); renderList(); renderBubbles(); updateUi();
 }
 function refreshSel() {
   $("range").value = document.activeElement === $("range") ? $("range").value : selText();
@@ -214,105 +364,433 @@ function refreshSel() {
     let s = false; for (let a = r; a < r + rs && !s; a++) for (let b = c; b < c + cs; b++) if (inRects(a, b)) { s = true; break; }
     td.classList.toggle("sel", s);
   });
+  const { R, C } = dims(curSheet());
+  document.querySelectorAll("#grid th[data-col]").forEach((th) => { const c = +th.dataset.col; th.classList.toggle("sel", rects.some((x) => x.c1 <= c && x.c2 >= c && x.r1 === 1 && x.r2 === R)); });
+  document.querySelectorAll("#grid th[data-row]").forEach((th) => { const r = +th.dataset.row; th.classList.toggle("sel", rects.some((x) => x.r1 <= r && x.r2 >= r && x.c1 === 1 && x.c2 === C)); });
+}
+function updateUi() {
+  $("tUndo").disabled = !undoStack.length; $("tRedo").disabled = !redoStack.length;
+  const d = $("dirty"); d.style.display = dirty.sheet || dirty.review ? "" : "none";
+  d.textContent = "未保存" + (dirty.sheet ? "（シート）" : "") + (dirty.review ? "（指示）" : "");
 }
 
-// ---- 選択操作 ----
+// ---- シートタブ（下部） ----
+let dragTab = null;
+function renderTabs() {
+  const t = $("tabs"); t.innerHTML = "";
+  sheet.sheets.forEach((s, i) => {
+    const b = document.createElement("button"); b.className = "tab" + (i === cur ? " on" : ""); b.textContent = s.name; b.draggable = true; b.dataset.i = i;
+    b.onclick = () => { if (cur !== i) { cur = i; rects = []; anchor = null; activeId = null; composer = null; render(); } };
+    b.ondblclick = () => renameSheet(i);
+    b.oncontextmenu = (e) => { e.preventDefault(); showMenu(e.clientX, e.clientY, tabMenu(i)); };
+    b.ondragstart = (e) => { dragTab = i; e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", String(i)); } catch {} };
+    b.ondragover = (e) => { if (dragTab !== null) { e.preventDefault(); b.classList.add("over"); } };
+    b.ondragleave = () => b.classList.remove("over");
+    b.ondrop = (e) => { e.preventDefault(); const from = dragTab; dragTab = null; if (from !== null && from !== i) moveSheet(from, i); else render(); };
+    t.appendChild(b);
+  });
+  const add = document.createElement("button"); add.className = "tab"; add.textContent = "+"; add.title = "シートを追加"; add.onclick = addSheet; t.appendChild(add);
+}
+function addSheet() {
+  let n = sheet.sheets.length + 1, name; do { name = "シート" + n++; } while (sheet.sheets.some((s) => s.name === name));
+  mutate(() => { sheet.sheets.push({ name, rows: 20, cols: 8, cells: {} }); cur = sheet.sheets.length - 1; rects = []; activeId = null; });
+}
+function validName(name, except) {
+  if (!name) return "シート名が空です";
+  if (name.length > 31) return "シート名は 31 文字以内です";
+  if (/[\[\]:*?\/\\]/.test(name)) return "シート名に [ ] : * ? / \\ は使えません";
+  if (sheet.sheets.some((s, i) => i !== except && s.name === name)) return "同じ名前のシートがあります";
+  return null;
+}
+function renameSheet(i) {
+  const b = $("tabs").children[i]; if (!b) return; const old = sheet.sheets[i].name;
+  const inp = document.createElement("input"); inp.value = old; b.replaceWith(inp); inp.focus(); inp.select(); let done = false;
+  const fin = (ok) => { if (done) return; done = true;
+    const name = inp.value.trim();
+    if (!ok || name === old) return renderTabs();
+    const err = validName(name, i); if (err) { toast(err); return renderTabs(); }
+    mutate(() => { for (const it of review.items) { const ps = splitRanges(it.range); if (ps.some((p) => p.sheet === old)) it.range = joinRanges(ps.map((p) => p.sheet === old ? { ...p, sheet: name } : p)); } sheet.sheets[i].name = name; }); };
+  inp.onkeydown = (e) => { if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); e.stopPropagation(); };
+  inp.onblur = () => fin(true);
+}
+function deleteSheet(i) {
+  if (sheet.sheets.length <= 1) return toast("最後のシートは削除できません");
+  mutate(() => { const name = sheet.sheets[i].name;
+    for (const it of review.items) { if (it.deleted) continue; const ps = splitRanges(it.range); if (ps.length && ps.every((p) => p.sheet === name)) it.deleted = true; else if (ps.some((p) => p.sheet === name)) it.range = joinRanges(ps.filter((p) => p.sheet !== name)); }
+    sheet.sheets.splice(i, 1); if (cur >= i) cur = Math.max(0, cur - 1); rects = []; activeId = null; });
+  toast("シートを削除しました（Ctrl+Z で戻せます）");
+}
+function moveSheet(from, to) { mutate(() => { const curObj = curSheet(); const [s] = sheet.sheets.splice(from, 1); sheet.sheets.splice(to, 0, s); cur = sheet.sheets.indexOf(curObj); }); }
+const tabMenu = (i) => [
+  { label: "名前を変更", fn: () => renameSheet(i) },
+  { label: "左へ移動", fn: () => moveSheet(i, i - 1), dis: i === 0 },
+  { label: "右へ移動", fn: () => moveSheet(i, i + 1), dis: i === sheet.sheets.length - 1 },
+  "-", { label: "削除", fn: () => deleteSheet(i), dis: sheet.sheets.length <= 1 },
+];
+
+// ---- メニュー・パレット ----
+function showMenu(x, y, items) {
+  const m = $("menu"); m.innerHTML = ""; hidePal();
+  for (const it of items) { if (it === "-") { m.appendChild(document.createElement("hr")); continue; }
+    const d = document.createElement("div"); d.textContent = it.label; if (it.dis) d.className = "dis";
+    d.onmousedown = (e) => e.stopPropagation(); d.onclick = () => { hideMenu(); it.fn(); }; m.appendChild(d); }
+  m.style.display = "block"; const w = m.offsetWidth, hh = m.offsetHeight;
+  m.style.left = Math.max(4, Math.min(x, innerWidth - w - 4)) + "px"; m.style.top = Math.max(4, Math.min(y, innerHeight - hh - 4)) + "px";
+}
+const hideMenu = () => { $("menu").style.display = "none"; };
+const PALETTE = ["#ffffff", "#f1f3f5", "#dee2e6", "#868e96", "#343a40", "#000000", "#dbe5f1", "#fff9db", "#d3f0dc", "#ffe3e3", "#ffd8a8", "#e5dbff", "#d0ebff", "#c5f6fa",
+  "#1f3a5f", "#2b6e44", "#c92a2a", "#e67700", "#862e9c", "#1971c2", "#fab005", "#40c057", "#fa5252", "#fd7e14", "#7950f2", "#339af0", "#15aabf", "#e64980"];
+function showPal(anchorEl, prop) {
+  hideMenu(); const p = $("pal");
+  p.innerHTML = `<div class="g">${PALETTE.map((c) => `<i data-c="${c}" style="background:${c}" title="${c}"></i>`).join("")}</div>
+    <div class="row"><input type="color" id="palc" style="width:44px;padding:0;height:24px" value="#ffffff"><button class="b" id="pal0">${prop === "bg" ? "背景なし" : "既定色"}</button></div>`;
+  p.onmousedown = (e) => e.stopPropagation();
+  p.querySelectorAll("i").forEach((i) => { i.onclick = () => { setProp(prop, i.dataset.c); hidePal(); }; });
+  p.querySelector("#palc").onchange = (e) => { setProp(prop, e.target.value); hidePal(); };
+  p.querySelector("#pal0").onclick = () => { setProp(prop, null); hidePal(); };
+  p.style.display = "block"; const r = anchorEl.getBoundingClientRect();
+  p.style.left = Math.min(r.left, innerWidth - 190) + "px"; p.style.top = (r.bottom + 4) + "px";
+}
+const hidePal = () => { $("pal").style.display = "none"; };
+document.addEventListener("mousedown", (e) => { if (!e.target.closest("#menu")) hideMenu(); if (!e.target.closest("#pal") && !e.target.closest("#tBg,#tFg")) hidePal(); });
+
+// ---- セル書式・結合 ----
+function eachCell(fn) { const sh = curSheet(); sh.cells = sh.cells || {};
+  for (const x of rects) for (let r = x.r1; r <= x.r2; r++) for (let c = x.c1; c <= x.c2; c++) fn(colName(c) + r, (sh.cells[colName(c) + r] = sh.cells[colName(c) + r] || {})); }
+function prune(sh) { for (const [k, v] of Object.entries(sh.cells || {})) if (!Object.keys(v).length) delete sh.cells[k]; }
+function setProp(prop, val) {
+  if (!rects.length) return toast("セルを選んでください");
+  mutate(() => { eachCell((a, cell) => { if (val === null || val === false) delete cell[prop]; else cell[prop] = val; }); prune(curSheet()); });
+}
+function toggleBold() {
+  if (!rects.length) return toast("セルを選んでください");
+  const sh = curSheet(); let all = true; for (const x of rects) for (let r = x.r1; r <= x.r2; r++) for (let c = x.c1; c <= x.c2; c++) if (!((sh.cells || {})[colName(c) + r] || {}).bold) all = false;
+  setProp("bold", all ? null : true);
+}
+function mergeSel() {
+  if (!rects.length) return toast("セルを選んでください");
+  const sh = curSheet(), x = expandMerges(sh, lastRect()); if (x.r1 === x.r2 && x.c1 === x.c2) return toast("2 セル以上を選んでください");
+  mutate(() => { sh.merges = (sh.merges || []).filter((m) => { const y = parseRect(m); return !(y && y.r1 <= x.r2 && y.r2 >= x.r1 && y.c1 <= x.c2 && y.c2 >= x.c1); });
+    sh.merges.push(rectText(x)); sh.cells = sh.cells || {};
+    for (let r = x.r1; r <= x.r2; r++) for (let c = x.c1; c <= x.c2; c++) if (r !== x.r1 || c !== x.c1) { const cell = sh.cells[colName(c) + r]; if (cell) delete cell.v; }
+    prune(sh); rects = [x]; });
+}
+function unmergeSel() {
+  const sh = curSheet(); if (!rects.length) return toast("セルを選んでください");
+  const hit = (m) => { const y = parseRect(m); return y && rects.some((x) => y.r1 <= x.r2 && y.r2 >= x.r1 && y.c1 <= x.c2 && y.c2 >= x.c1); };
+  if (!(sh.merges || []).some(hit)) return toast("結合セルがありません");
+  mutate(() => { sh.merges = sh.merges.filter((m) => !hit(m)); if (!sh.merges.length) delete sh.merges; });
+}
+function setFreeze(fr, fc) { mutate(() => setFreezeVal(curSheet(), fr, fc)); }
+
+// ---- メニューの中身 ----
+const selRows = () => { const x = lastRect(); return [x.r1, x.r2]; };
+const selCols = () => { const x = lastRect(); return [x.c1, x.c2]; };
+function rowItems() { const [a, b] = selRows(), n = b - a + 1, fz = parseFreeze(curSheet());
+  return [{ label: `上に ${n} 行を挿入`, fn: () => insertRows(a, n) }, { label: `下に ${n} 行を挿入`, fn: () => insertRows(b + 1, n) }, { label: `行 ${a}${a !== b ? "〜" + b : ""} を削除`, fn: () => deleteRows(a, b) },
+    { label: `行 ${b} まで固定`, fn: () => setFreeze(b, fz.fc) }, { label: "行の固定を解除", fn: () => setFreeze(0, fz.fc), dis: !fz.fr }]; }
+function colItems() { const [a, b] = selCols(), n = b - a + 1, fz = parseFreeze(curSheet());
+  return [{ label: `左に ${n} 列を挿入`, fn: () => insertCols(a, n) }, { label: `右に ${n} 列を挿入`, fn: () => insertCols(b + 1, n) }, { label: `列 ${colName(a)}${a !== b ? "〜" + colName(b) : ""} を削除`, fn: () => deleteCols(a, b) },
+    { label: `列 ${colName(b)} まで固定`, fn: () => setFreeze(fz.fr, b) }, { label: "列の固定を解除", fn: () => setFreeze(fz.fr, 0), dis: !fz.fc }]; }
+function freezeItems() { const x = lastRect(), fz = parseFreeze(curSheet());
+  return [{ label: `行 ${x.r2} まで固定`, fn: () => setFreeze(x.r2, fz.fc) }, { label: `列 ${colName(x.c2)} まで固定`, fn: () => setFreeze(fz.fr, x.c2) },
+    { label: `行 ${x.r2}・列 ${colName(x.c2)} まで固定`, fn: () => setFreeze(x.r2, x.c2) }, "-",
+    { label: "行の固定を解除", fn: () => setFreeze(0, fz.fc), dis: !fz.fr }, { label: "列の固定を解除", fn: () => setFreeze(fz.fr, 0), dis: !fz.fc }, { label: "固定をすべて解除", fn: () => setFreeze(0, 0), dis: !fz.fr && !fz.fc }]; }
+const btnMenu = (id, items) => { $(id).onclick = (e) => { const r = e.currentTarget.getBoundingClientRect(); showMenu(r.left, r.bottom + 2, items()); }; };
+btnMenu("tRow", rowItems); btnMenu("tCol", colItems); btnMenu("tFreeze", freezeItems);
+$("tUndo").onclick = undo; $("tRedo").onclick = redo; $("tBold").onclick = toggleBold; $("tMerge").onclick = mergeSel; $("tUnmerge").onclick = unmergeSel;
+document.querySelectorAll("[data-align]").forEach((b) => { b.onclick = () => setProp("align", b.dataset.align); });
+$("tBg").onclick = (e) => showPal(e.currentTarget, "bg"); $("tFg").onclick = (e) => showPal(e.currentTarget, "color");
+$("tComment").onclick = () => openComposer();
+
+// ---- 選択・ドラッグ・リサイズ・並び替え ----
 const cellOf = (e) => e.target.closest && e.target.closest("td");
+let drag = null; // {kind: 'rzc'|'rzr'|'reorder', ...}
+function headRect(type, a, b) { const { R, C } = dims(curSheet()); const lo = Math.min(a, b), hi = Math.max(a, b);
+  return type === "col" ? { r1: 1, c1: lo, r2: R, c2: hi } : { r1: lo, c1: 1, r2: hi, c2: C }; } // 結合は広げない（列・行そのものを選ぶ）
+function isWholeSelected(type, n) { const { R, C } = dims(curSheet()); const x = rects.length === 1 ? rects[0] : null; if (!x) return false;
+  return type === "col" ? x.r1 === 1 && x.r2 === R && n >= x.c1 && n <= x.c2 : x.c1 === 1 && x.c2 === C && n >= x.r1 && n <= x.r2; }
 $("grid").addEventListener("mousedown", (e) => {
-  const sh = sheet.sheets[cur], { R, C } = dims(sh);
+  if (e.button !== 0) return;
+  const sh = curSheet();
+  const rc = e.target.closest(".rz-c"), rr = e.target.closest(".rz-r");
+  if (rc) { const c = +rc.dataset.rzc; drag = { kind: "rzc", n: c, x0: e.clientX, w0: cwOf(sh, c) }; e.preventDefault(); return; }
+  if (rr) { const r = +rr.dataset.rzr; drag = { kind: "rzr", n: r, y0: e.clientY, h0: rhOf(sh, r) }; e.preventDefault(); return; }
   const th = e.target.closest("th");
-  let rc = null;
-  if (th && th.dataset.col) { const c = +th.dataset.col; rc = { r1: 1, c1: c, r2: R, c2: c }; }
-  else if (th && th.dataset.row) { const r = +th.dataset.row; rc = { r1: r, c1: 1, r2: r, c2: C }; }
-  if (rc) { rc = expandMerges(sh, rc); if (e.ctrlKey || e.metaKey) rects.push(rc); else rects = [rc]; anchor = null; refreshSel(); return; }
+  if (th && (th.dataset.col || th.dataset.row)) {
+    const type = th.dataset.col ? "col" : "row", n = +(th.dataset.col || th.dataset.row);
+    if (isWholeSelected(type, n) && !e.shiftKey && !e.ctrlKey && !e.metaKey) { const x = rects[0]; drag = { kind: "reorder", type, a: type === "col" ? x.c1 : x.r1, b: type === "col" ? x.c2 : x.r2, x0: e.clientX, y0: e.clientY, on: false, t: null }; e.preventDefault(); return; }
+    if (e.shiftKey && hAnchor && hAnchor.type === type) rects = [headRect(type, hAnchor.n, n)];
+    else { hAnchor = { type, n }; const x = headRect(type, n, n); if (e.ctrlKey || e.metaKey) rects.push(x); else rects = [x]; }
+    anchor = null; activeId = null; refreshSel(); renderBubbles(); e.preventDefault(); return;
+  }
   const td = cellOf(e); if (!td) return;
   const r = +td.dataset.r, c = +td.dataset.c, here = expandMerges(sh, { r1: r, c1: c, r2: r, c2: c });
   if (e.shiftKey && anchor && rects.length) { rects[rects.length - 1] = expandMerges(sh, { r1: Math.min(anchor.r, r), c1: Math.min(anchor.c, c), r2: Math.max(anchor.r, r), c2: Math.max(anchor.c, c) }); }
   else { anchor = { r, c }; if (e.ctrlKey || e.metaKey) rects.push(here); else rects = [here]; dragging = true; }
+  const hit = review.items.find((it) => !it.deleted && parseRanges(it.range).some((p) => p.sheet === sh.name && r >= p.rect.r1 && r <= p.rect.r2 && c >= p.rect.c1 && c <= p.rect.c2));
+  const nid = hit ? hit.id : null; if (nid !== activeId) { activeId = nid; renderList(); renderBubbles(); }
   refreshSel(); e.preventDefault();
 });
 $("grid").addEventListener("mouseover", (e) => {
   if (!dragging) return; const td = cellOf(e); if (!td || !anchor) return;
-  const r = +td.dataset.r, c = +td.dataset.c, sh = sheet.sheets[cur];
-  rects[rects.length - 1] = expandMerges(sh, { r1: Math.min(anchor.r, r), c1: Math.min(anchor.c, c), r2: Math.max(anchor.r, r), c2: Math.max(anchor.c, c) });
+  const r = +td.dataset.r, c = +td.dataset.c;
+  rects[rects.length - 1] = expandMerges(curSheet(), { r1: Math.min(anchor.r, r), c1: Math.min(anchor.c, c), r2: Math.max(anchor.r, r), c2: Math.max(anchor.c, c) });
   refreshSel();
 });
-window.addEventListener("mouseup", () => { dragging = false; });
-$("range").addEventListener("input", () => { // 直接入力 -> 選択へ反映
-  const ps = parseRanges($("range").value).filter((p) => p.sheet === sheet.sheets[cur].name);
-  rects = ps.map((p) => p.rect); document.querySelectorAll("#grid td").forEach(() => {}); refreshSelCells();
+window.addEventListener("mousemove", (e) => {
+  if (!drag) return; const sh = curSheet();
+  if (drag.kind === "rzc") { const w = Math.max(20, Math.round(drag.w0 + e.clientX - drag.x0)); drag.w = w;
+    const col = $("grid").querySelectorAll("col")[drag.n]; if (col) col.style.width = w + "px"; $("grid").style.width = (parseFloat($("grid").style.width) + w - (drag.last ?? drag.w0)) + "px"; drag.last = w; layoutBubbles(); }
+  else if (drag.kind === "rzr") { const h = Math.max(14, Math.round(drag.h0 + e.clientY - drag.y0)); drag.h = h;
+    const tr = $("grid").querySelector(`th[data-row='${drag.n}']`).parentElement; tr.style.height = h + "px"; layoutBubbles(); }
+  else if (drag.kind === "reorder") {
+    if (!drag.on && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 5) drag.on = true; if (!drag.on) return;
+    document.querySelectorAll("#grid th.drop-l,#grid th.drop-r,#grid th.drop-t,#grid th.drop-b").forEach((x) => x.classList.remove("drop-l", "drop-r", "drop-t", "drop-b"));
+    const el = document.elementFromPoint(e.clientX, e.clientY), th = el && el.closest && el.closest("th"); drag.t = null;
+    if (!th) return; const tr = th.getBoundingClientRect();
+    if (drag.type === "col" && th.dataset.col) { const n = +th.dataset.col, left = e.clientX < tr.left + tr.width / 2; drag.t = left ? n : n + 1; th.classList.add(left ? "drop-l" : "drop-r"); }
+    if (drag.type === "row" && th.dataset.row) { const n = +th.dataset.row, top = e.clientY < tr.top + tr.height / 2; drag.t = top ? n : n + 1; th.classList.add(top ? "drop-t" : "drop-b"); }
+  }
+});
+window.addEventListener("mouseup", () => {
+  dragging = false; if (!drag) return; const d = drag; drag = null; const sh = curSheet();
+  if (d.kind === "rzc" && d.w && d.w !== d.w0) mutate(() => { sh.colWidths = sh.colWidths || {}; sh.colWidths[colName(d.n)] = d.w; });
+  else if (d.kind === "rzr" && d.h && d.h !== d.h0) mutate(() => { sh.rowHeights = sh.rowHeights || {}; sh.rowHeights[d.n] = d.h; });
+  else if (d.kind === "reorder") { if (d.on && d.t != null) moveAxis(d.type === "col" ? "c" : "r", d.a, d.b, d.t); else render(); }
+});
+$("grid").addEventListener("contextmenu", (e) => {
+  e.preventDefault(); const th = e.target.closest("th"), td = cellOf(e);
+  if (th && th.dataset.col) { const c = +th.dataset.col; if (!isWholeSelected("col", c)) { rects = [headRect("col", c, c)]; hAnchor = { type: "col", n: c }; refreshSel(); } return showMenu(e.clientX, e.clientY, colItems()); }
+  if (th && th.dataset.row) { const r = +th.dataset.row; if (!isWholeSelected("row", r)) { rects = [headRect("row", r, r)]; hAnchor = { type: "row", n: r }; refreshSel(); } return showMenu(e.clientX, e.clientY, rowItems()); }
+  if (td) { const r = +td.dataset.r, c = +td.dataset.c; if (!inRects(r, c)) { rects = [expandMerges(curSheet(), { r1: r, c1: c, r2: r, c2: c })]; anchor = { r, c }; refreshSel(); }
+    showMenu(e.clientX, e.clientY, [{ label: "この範囲にコメント", fn: () => openComposer() }, { label: "セルを編集", fn: () => startEdit(+td.dataset.r, +td.dataset.c) }, "-",
+      { label: "セルを結合", fn: mergeSel }, { label: "結合を解除", fn: unmergeSel }, { label: "背景色…", fn: () => showPal($("tBg"), "bg") }, { label: "文字色…", fn: () => showPal($("tFg"), "color") }, { label: "太字 切替", fn: toggleBold }, "-",
+      ...rowItems(), "-", ...colItems()]); }
+});
+$("range").addEventListener("input", () => {
+  rects = parseRanges($("range").value).filter((p) => p.sheet === curSheet().name).map((p) => p.rect);
+  const keep = $("range").value; refreshSel(); $("range").value = keep;
 });
 $("range").addEventListener("blur", () => refreshSel());
-function refreshSelCells() { const keep = $("range").value; refreshSel(); $("range").value = keep; }
 
-// ---- 指示一覧 ----
+// ---- セルの直接編集 ----
+let editing = null;
+function startEdit(r, c, initial) {
+  const sh = curSheet(), { origin, covered } = mergeMap(sh);
+  if (covered.has(r + "," + c)) { for (const m of Object.values(origin)) if (r >= m.r1 && r <= m.r2 && c >= m.c1 && c <= m.c2) { r = m.r1; c = m.c1; } }
+  const td = document.querySelector(`#grid td[data-r='${r}'][data-c='${c}']`); if (!td) return;
+  endEdit(true);
+  const host = $("gridhost").getBoundingClientRect(), b = td.getBoundingClientRect(), cell = (sh.cells || {})[colName(c) + r] || {};
+  const ta = document.createElement("textarea"); ta.id = "editor";
+  ta.style.left = (b.left - host.left) + "px"; ta.style.top = (b.top - host.top) + "px"; ta.style.width = Math.max(b.width, 60) + "px"; ta.style.height = Math.max(b.height, 24) + "px";
+  if (cell.align) ta.style.textAlign = cell.align; if (cell.bold) ta.style.fontWeight = "700"; if (cell.size) ta.style.fontSize = cell.size + "px";
+  const orig = cell.v === undefined || cell.v === null ? "" : String(cell.v);
+  ta.value = initial !== undefined ? initial : orig;
+  $("gridhost").appendChild(ta); ta.focus(); if (initial === undefined) ta.select(); else ta.setSelectionRange(ta.value.length, ta.value.length);
+  editing = { r, c, ta, orig, done: false };
+  ta.onkeydown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.altKey) { e.preventDefault(); endEdit(true); moveSel(1, 0); }
+    else if (e.key === "Enter" && e.altKey) { e.preventDefault(); const p = ta.selectionStart; ta.value = ta.value.slice(0, p) + "\n" + ta.value.slice(ta.selectionEnd); ta.setSelectionRange(p + 1, p + 1); }
+    else if (e.key === "Escape") { e.preventDefault(); endEdit(false); }
+    else if (e.key === "Tab") { e.preventDefault(); endEdit(true); moveSel(0, e.shiftKey ? -1 : 1); }
+    e.stopPropagation();
+  };
+  ta.onblur = () => endEdit(true);
+}
+function parseValue(t) { if (t.startsWith("=")) return t; if (/^-?(0|[1-9]\d*)(\.\d+)?$/.test(t.trim())) return Number(t.trim()); return t; }
+function endEdit(commit) {
+  if (!editing || editing.done) return; const e = editing; e.done = true; editing = null; const text = e.ta.value; e.ta.onblur = null; e.ta.remove();
+  if (!commit || text === e.orig) return;
+  const sh = curSheet();
+  mutate(() => { sh.cells = sh.cells || {}; const k = colName(e.c) + e.r, cell = (sh.cells[k] = sh.cells[k] || {});
+    if (text === "") delete cell.v; else cell.v = parseValue(text); prune(sh); });
+}
+$("grid").addEventListener("dblclick", (e) => { const td = cellOf(e); if (td) startEdit(+td.dataset.r, +td.dataset.c); });
+function moveSel(dr, dc) {
+  const sh = curSheet(), { R, C } = dims(sh), x = lastRect(); const r = Math.min(R, Math.max(1, (dr > 0 ? x.r2 : x.r1) + dr)), c = Math.min(C, Math.max(1, (dc > 0 ? x.c2 : x.c1) + dc));
+  anchor = { r, c }; rects = [expandMerges(sh, { r1: r, c1: c, r2: r, c2: c })]; refreshSel();
+  const td = document.querySelector(`#grid td[data-r='${r}'][data-c='${c}']`); if (td) td.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+window.addEventListener("keydown", (e) => {
+  const t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); return saveAll(); }
+  if (typing) return;
+  if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); return e.shiftKey ? redo() : undo(); }
+  if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); return redo(); }
+  if (e.key === "Escape") { hideMenu(); hidePal(); composer = null; activeId = null; renderBubbles(); return; }
+  if (!rects.length) return;
+  const x = lastRect();
+  if (e.key === "F2" || (e.key === "Enter" && !mod)) { e.preventDefault(); return startEdit(x.r1, x.c1); }
+  if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); const sh = curSheet(); if (!rects.some((q) => { for (let r = q.r1; r <= q.r2; r++) for (let c = q.c1; c <= q.c2; c++) if (((sh.cells || {})[colName(c) + r] || {}).v !== undefined) return true; return false; })) return;
+    return mutate(() => { eachCell((a, cell) => { delete cell.v; }); prune(sh); }); }
+  const arrows = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+  if (arrows[e.key]) { e.preventDefault(); return moveSel(...arrows[e.key]); }
+  if (!mod && !e.altKey && e.key.length === 1) { e.preventDefault(); startEdit(x.r1, x.c1, e.key); }
+});
+
+// ---- コメント（指示）: 一覧と吹き出し ----
 const nextId = () => "r" + (Math.max(0, ...review.items.map((i) => +String(i.id).replace(/\D/g, "") || 0)) + 1);
+const itemById = (id) => review.items.find((i) => i.id === id);
+function activate(id, jump) {
+  activeId = id; composer = null; const it = itemById(id); if (!it) return render();
+  if (jump && !it.deleted) { hlRanges = parseRanges(it.range); const f = hlRanges[0]; if (f) { const i = sheet.sheets.findIndex((s) => s.name === f.sheet); if (i >= 0) cur = i; } }
+  render(); if (jump) { const el = document.querySelector("#grid td.hl"); if (el) el.scrollIntoView({ block: "center", inline: "center" }); layoutBubbles(); setTimeout(() => { hlRanges = []; render(); }, 1600); }
+}
 function renderList() {
   const f = $("filter").value, box = $("list"); box.innerHTML = "";
-  const esc = (s) => String(s).replace(/[&<>]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x]));
   review.items.forEach((it, idx) => {
     if (f && it.status !== f) return;
-    const d = document.createElement("div"); d.className = "item";
-    d.innerHTML = `<div><span class="r">${esc(it.range)}</span><span class="st ${it.status}">${it.status}</span></div><div class="i">${esc(it.instruction)}</div>` +
+    const d = document.createElement("div"); d.className = "item" + (it.id === activeId ? " on" : "") + (it.deleted ? " gone" : ""); d.dataset.id = it.id;
+    d.innerHTML = `<div><span class="r">${esc(it.range)}</span><span class="st ${it.status}">${it.status}</span>${it.deleted ? '<span class="st 削除">対象が削除された</span>' : ""}</div><div class="i">${esc(it.instruction)}</div>` +
       (it.agent_reply ? `<div class="a">${esc(it.agent_reply)}</div>` : "") +
       `<div class="row"><select data-s="${idx}" style="width:auto"><option>未対応</option><option>対応済</option><option>質問</option></select><button class="b" data-e="${idx}">編集</button><button class="b" data-d="${idx}">削除</button></div>`;
     d.querySelector("select").value = it.status;
-    d.onclick = (e) => { if (e.target.closest(".row")) return; hlRanges = parseRanges(it.range);
-      const first = hlRanges[0]; if (first) { const i = sheet.sheets.findIndex((s) => s.name === first.sheet); if (i >= 0) cur = i; }
-      render(); const el = document.querySelector("#grid td.hl"); if (el) el.scrollIntoView({ block: "center", inline: "center" }); setTimeout(() => { hlRanges = []; render(); }, 1800); };
-    d.querySelector("select").onchange = (e) => { it.status = e.target.value; persist(); render(); };
-    d.querySelector("[data-d]").onclick = () => { if (confirm("この指示を削除しますか")) { review.items.splice(idx, 1); persist(); render(); } };
-    d.querySelector("[data-e]").onclick = () => { const t = prompt("指示を編集", it.instruction); if (t !== null) { it.instruction = t; persist(); render(); } };
+    d.onclick = (e) => { if (e.target.closest(".row")) return; activate(it.id, true); };
+    d.querySelector("select").onchange = (e) => mutate(() => { it.status = e.target.value; });
+    d.querySelector("[data-d]").onclick = () => { if (confirm("この指示を削除しますか")) mutate(() => { review.items.splice(idx, 1); if (activeId === it.id) activeId = null; }); };
+    d.querySelector("[data-e]").onclick = () => { const t = prompt("指示を編集", it.instruction); if (t !== null) mutate(() => { it.instruction = t; }); };
     box.appendChild(d);
   });
   if (!box.children.length) box.innerHTML = '<div class="item hint">指示はまだありません</div>';
 }
 $("filter").onchange = renderList;
-$("add").onclick = () => {
-  const range = $("range").value.trim(), instruction = $("instr").value.trim();
+function addItem(range, instruction) {
   if (!range) return toast("範囲を選択してください");
   if (!instruction) return toast("指示を入力してください");
-  review.items.push({ id: nextId(), range, instruction, status: "未対応", agent_reply: "" });
-  $("instr").value = ""; rects = []; persist(); render(); toast("追加しました（保存で確定）");
-};
-
-// ---- 保存 / コピー / 再読み込み ----
-function persist() { tryLS(() => localStorage.setItem(LS_KEY, JSON.stringify(review))); }
-function setConn() {
-  $("conn").textContent = serverOk ? "サーバ接続中" : "サーバなし（コピペ運用）";
-  $("conn").className = "badge " + (serverOk ? "ok" : "ng");
+  let id; mutate(() => { id = nextId(); review.items.push({ id, range, instruction, status: "未対応", agent_reply: "" }); });
+  composer = null; activeId = id; render(); toast("追加しました（保存で確定）"); return true;
 }
-function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 1800); }
-const reviewJson = () => JSON.stringify({ sheet: review.sheet || BOOT.key, items: review.items }, null, 2);
-$("save").onclick = async () => {
-  persist();
-  try {
-    const r = await fetch("/api/review", { method: "POST", headers: { "content-type": "application/json" }, body: reviewJson() });
-    const j = await r.json(); if (!j.ok) throw new Error(j.error);
-    serverOk = true; setConn(); $("savemsg").textContent = `保存しました: ${j.path}（${j.count} 件）`; toast("保存しました");
-  } catch (e) {
-    serverOk = false; setConn(); $("savemsg").textContent = "サーバに保存できませんでした。ブラウザに保持済み。「指示をコピー」でチャットに貼ってください。";
+$("add").onclick = () => { if (addItem($("range").value.trim(), $("instr").value.trim())) { $("instr").value = ""; } };
+function openComposer() { if (!rects.length) return toast("先にセルを選んでください"); composer = { range: selText(), text: composer ? composer.text : "", focus: true }; activeId = null; renderBubbles(); }
+
+function bubbleList() { // 表示する吹き出し
+  const out = [];
+  if (composer) out.push({ kind: "new" });
+  const showAll = $("showAll").checked;
+  for (const it of review.items) { if (it.deleted) continue; if (it.id === activeId || showAll) { const f = parseRanges(it.range).find((p) => p.sheet === curSheet().name); if (f) out.push({ kind: "item", it, rect: f.rect }); } }
+  return out;
+}
+let bubbles = [];
+function renderBubbles() {
+  const ov = $("ov"); ov.querySelectorAll(".bubble").forEach((b) => b.remove()); $("lines").innerHTML = ""; bubbles = [];
+  for (const b of bubbleList()) {
+    const d = document.createElement("div");
+    if (b.kind === "new") {
+      d.className = "bubble new active"; d.innerHTML = `<button class="x" title="閉じる">×</button><div class="hint">${esc(composer.range)}</div><textarea placeholder="この範囲をどうしたいか（Ctrl+Enter で追加）"></textarea><div class="row"><button class="b p" data-ok>追加</button><button class="b" data-no>キャンセル</button></div>`;
+      const ta = d.querySelector("textarea"); ta.value = composer.text; ta.oninput = () => { composer.text = ta.value; };
+      ta.onkeydown = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); d.querySelector("[data-ok]").click(); } if (e.key === "Escape") { composer = null; renderBubbles(); } e.stopPropagation(); };
+      d.querySelector("[data-ok]").onclick = () => addItem(composer.range, composer.text.trim());
+      d.querySelector("[data-no]").onclick = d.querySelector(".x").onclick = () => { composer = null; renderBubbles(); };
+      b.rect = (parseRanges(composer.range)[0] || {}).rect; b.focus = composer.focus; composer.focus = false;
+      if (!b.rect) continue;
+    } else {
+      const it = b.it, cls = it.status === "対応済" ? "done" : it.status === "質問" ? "q" : "";
+      d.className = "bubble " + cls + (it.id === activeId ? " active" : ""); d.dataset.id = it.id;
+      d.innerHTML = `<button class="x" title="閉じる">×</button><div><span class="st ${it.status}" style="margin-left:0">${it.status}</span> <span class="hint">${esc(it.range)}</span></div><div class="t">${esc(it.instruction)}</div>` + (it.agent_reply ? `<div class="a">${esc(it.agent_reply)}</div>` : "");
+      d.onclick = (e) => { if (e.target.closest(".x")) return; if (activeId !== it.id) { activeId = it.id; renderList(); renderBubbles(); } const li = document.querySelector(`#list .item[data-id='${it.id}']`); if (li) li.scrollIntoView({ block: "nearest" }); };
+      d.querySelector(".x").onclick = (e) => { e.stopPropagation(); if (activeId === it.id) activeId = null; renderList(); renderBubbles(); };
+    }
+    ov.appendChild(d); b.el = d;
+    const ln = document.createElementNS("http://www.w3.org/2000/svg", "path"); ln.setAttribute("fill", "none"); ln.setAttribute("stroke", "#f59e0b"); ln.setAttribute("stroke-width", "1.5"); $("lines").appendChild(ln); b.ln = ln;
+    bubbles.push(b);
   }
-};
-$("copy").onclick = async () => {
-  const txt = reviewJson();
-  try { await navigator.clipboard.writeText(txt); toast("JSON をコピーしました"); }
-  catch { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("JSON をコピーしました"); }
-};
-$("reload").onclick = async () => {
+  layoutBubbles(); const nb = bubbles.find((b) => b.focus); if (nb) nb.el.querySelector("textarea").focus();
+}
+function layoutBubbles() {
+  if (!bubbles.length) return;
+  const host = $("gridhost").getBoundingClientRect(), tds = [...document.querySelectorAll("#grid td")], placed = [];
+  const W = host.width, H = host.height;
+  const list = bubbles.map((b) => { // 範囲に重なるセルの外接矩形（host 座標）
+    let l = 1e9, t = 1e9, r = -1e9, bt = -1e9;
+    for (const td of tds) { const R1 = +td.dataset.r, C1 = +td.dataset.c, rs = td.rowSpan || 1, cs = td.colSpan || 1;
+      if (R1 <= b.rect.r2 && R1 + rs - 1 >= b.rect.r1 && C1 <= b.rect.c2 && C1 + cs - 1 >= b.rect.c1) { const q = td.getBoundingClientRect(); l = Math.min(l, q.left); t = Math.min(t, q.top); r = Math.max(r, q.right); bt = Math.max(bt, q.bottom); } }
+    return { b, box: l > r ? null : { l: l - host.left, t: t - host.top, r: r - host.left, bt: bt - host.top } }; }).sort((a, c) => (a.box ? a.box.t : 0) - (c.box ? c.box.t : 0));
+  for (const { b, box } of list) {
+    const el = b.el; if (!box || box.bt < 0 || box.t > H) { el.style.display = "none"; b.ln.setAttribute("d", ""); continue; }
+    el.style.display = ""; const bw = el.offsetWidth, bh = el.offsetHeight;
+    let left = box.r + 36; if (left + bw > W - 6) left = Math.max(6, Math.min(box.l - bw - 36, W - bw - 6)); if (left < 6) left = 6;
+    let top = Math.max(4, Math.min(box.t - 4, H - bh - 4));
+    for (const p of placed) if (left < p.left + p.w + 4 && left + bw + 4 > p.left && top < p.top + p.h + 4 && top + bh + 4 > p.top) top = p.top + p.h + 6;
+    placed.push({ left, top, w: bw, h: bh }); el.style.left = left + "px"; el.style.top = top + "px";
+    const fromLeft = left > box.r, x1 = fromLeft ? box.r : box.l, y1 = Math.min(box.t + 12, (box.t + box.bt) / 2 + 6), x2 = fromLeft ? left : left + bw, y2 = top + 16;
+    b.ln.setAttribute("d", `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`);
+  }
+}
+$("gridwrap").addEventListener("scroll", layoutBubbles); window.addEventListener("resize", layoutBubbles);
+$("showAll").onchange = renderBubbles;
+
+// ---- 保存 / 競合 / コピー / 再読み込み ----
+function persist() { tryLS(() => localStorage.setItem(LS_KEY, JSON.stringify({ sheet, review, dirty, base }))); }
+function setConn() { $("conn").textContent = serverOk ? "サーバ接続中" : "サーバなし（コピペ運用）"; $("conn").className = "badge " + (serverOk ? "ok" : "ng"); }
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2200); }
+const reviewJson = () => JSON.stringify({ sheet: review.sheet || BOOT.key, items: review.items }, null, 2);
+const sheetJson = () => JSON.stringify(sheet, null, 2);
+function banner(html) { const b = $("banner"); b.innerHTML = html; b.classList.toggle("on", !!html); }
+function showConflict(which, quiet) {
+  const names = which.join(" / ");
+  banner(`<span><b>エージェントが ${names} を更新しました。</b>${dirty.sheet || dirty.review ? "このまま保存すると上書きになるため、保存を止めました。" : ""}再読み込みすると画面の未保存の変更は失われます。</span><button class="b p" id="bnReload">再読み込み</button><button class="b" id="bnCopy">自分の sheet.json をコピー</button><button class="b" id="bnClose">閉じる</button>`);
+  $("bnReload").onclick = reloadAll; $("bnCopy").onclick = () => copyText(sheetJson(), "sheet.json をコピーしました"); $("bnClose").onclick = () => banner("");
+}
+async function post(url, body) {
+  const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({ ok: false, error: "bad response" })); return { status: r.status, j };
+}
+async function saveAll() {
+  endEdit(true); persist();
+  if (!dirty.sheet && !dirty.review) return toast("変更はありません");
+  const msgs = [], conflicts = [];
   try {
-    sheet = await (await fetch("/api/sheet", { cache: "no-store" })).json();
-    review = await (await fetch("/api/review", { cache: "no-store" })).json();
+    if (dirty.sheet) { const { status, j } = await post("/api/sheet", { sheet, base: base.sheet });
+      if (status === 409) conflicts.push("sheet.json"); else if (!j.ok) throw new Error(j.error); else { base.sheet = j.version; saved.sheet = JSON.stringify(sheet); dirty.sheet = false; msgs.push(`sheet.json 保存（${j.count} シート）`); } }
+    if (dirty.review) { const { status, j } = await post("/api/review", { items: review.items, base: base.review });
+      if (status === 409) conflicts.push("review.json"); else if (!j.ok) throw new Error(j.error); else { base.review = j.version; saved.review = JSON.stringify(review); dirty.review = false; msgs.push(`review.json 保存（${j.count} 件）`); } }
+    serverOk = true; setConn();
+  } catch (e) {
+    serverOk = false; setConn(); persist(); updateUi();
+    $("savemsg").textContent = "サーバに保存できませんでした。ブラウザに退避済み。「sheet.json をコピー」「指示をコピー」で JSON を出せます。"; return toast("サーバに保存できません（ブラウザに退避しました）");
+  }
+  persist(); updateUi();
+  if (conflicts.length) { showConflict(conflicts); msgs.push(`${conflicts.join(" / ")} は競合のため未保存`); } else banner("");
+  $("savemsg").textContent = msgs.join(" / "); toast(conflicts.length ? "競合: 保存を止めました" : "保存しました");
+}
+$("save").onclick = saveAll;
+async function copyText(txt, msg) {
+  try { await navigator.clipboard.writeText(txt); } catch { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  toast(msg);
+}
+$("copy").onclick = () => copyText(reviewJson(), "指示の JSON をコピーしました");
+$("copySheet").onclick = () => copyText(sheetJson(), "sheet.json をコピーしました");
+async function reloadAll() {
+  try {
+    const rs = await fetch("/api/sheet", { cache: "no-store" }), rr = await fetch("/api/review", { cache: "no-store" });
+    sheet = await rs.json(); review = await rr.json(); base = { sheet: rs.headers.get("x-version"), review: rr.headers.get("x-version") };
+    saved = { sheet: JSON.stringify(sheet), review: JSON.stringify(review) }; dirty = { sheet: false, review: false }; undoStack = []; redoStack = []; rects = []; anchor = null; activeId = null; composer = null; banner("");
     serverOk = true; setConn(); persist(); render(); toast("読み直しました");
   } catch { serverOk = false; setConn(); toast("サーバに接続できません"); }
-};
-
-// 起動時: サーバなし（静的 HTML）なら localStorage の下書きを復元
-if (!BOOT.server) {
-  const saved = tryLS(() => localStorage.getItem(LS_KEY));
-  if (saved) { try { const r = JSON.parse(saved); if (r && Array.isArray(r.items) && (!review.items.length)) review = r; } catch {} }
 }
-setConn(); render();
+$("reload").onclick = reloadAll;
+// エージェントの更新を検知（サーバ接続時のみ）
+async function poll() {
+  if (!BOOT.server) return;
+  try {
+    const v = await (await fetch("/api/version", { cache: "no-store" })).json(); if (!serverOk) { serverOk = true; setConn(); }
+    const ch = []; if (v.sheet !== base.sheet) ch.push("sheet.json"); if (v.review !== base.review) ch.push("review.json");
+    if (ch.length) showConflict(ch);
+  } catch { if (serverOk) { serverOk = false; setConn(); } }
+}
+setInterval(poll, 3000);
+window.addEventListener("beforeunload", (e) => { if (dirty.sheet || dirty.review) { persist(); if (serverOk) { e.preventDefault(); e.returnValue = ""; } } });
+
+// 起動時: 下書き（localStorage）の復元。読み込んだ版が同じときだけ戻す（エージェントの更新を握りつぶさない）
+(function boot() {
+  const d = tryLS(() => JSON.parse(localStorage.getItem(LS_KEY)));
+  if (d && d.sheet && d.review && d.dirty && (d.dirty.sheet || d.dirty.review) && d.base && d.base.sheet === base.sheet && d.base.review === base.review) {
+    sheet = d.sheet; review = d.review; dirty = d.dirty; toast("未保存の下書きを復元しました");
+  }
+  setConn(); render();
+})();
 </script>
 </body>
 </html>

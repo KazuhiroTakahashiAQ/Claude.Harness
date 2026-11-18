@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: direct-edit-priority
+expected_outcome: |
+  人が画面で直接編集済みの sheet.json（備考列の幅がすでに 300、行が 1 行挿入済み）を読み直し、指示文ではなく現在の sheet.json を基準に未対応の指示を処理している。
+  deleted: true の項目は黙って直さず、対象が削除されたことを agent_reply に書いている。

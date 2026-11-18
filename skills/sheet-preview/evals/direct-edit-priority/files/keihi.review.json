@@ -1,0 +1,20 @@
+{
+  "sheet": "keihi.sheet.json",
+  "items": [
+    {
+      "id": "r1",
+      "range": "明細!F3:F4",
+      "instruction": "備考列の幅を 300px にする",
+      "status": "未対応",
+      "agent_reply": ""
+    },
+    {
+      "id": "r2",
+      "range": "明細!B9",
+      "instruction": "この行は不要なので消す",
+      "status": "未対応",
+      "agent_reply": "",
+      "deleted": true
+    }
+  ]
+}
