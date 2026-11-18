@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sheet-preview</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--line:#d0d5dd;--text:#1d2430;--mute:#667085;--accent:#2563eb;--sel:rgba(37,99,235,.18);--head:#eef1f5}
+@media (prefers-color-scheme: dark){:root{--bg:#14171c;--panel:#1c2027;--line:#3a414d;--text:#e6e9ef;--mute:#98a2b3;--accent:#6ea0ff;--sel:rgba(110,160,255,.28);--head:#262b34}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:15px;margin:0}
+.badge{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--mute)}
+.badge.ok{color:#1a7f4b;border-color:#1a7f4b}.badge.ng{color:#b54708;border-color:#b54708}
+main{flex:1;display:flex;min-height:0}
+#left{flex:1;display:flex;flex-direction:column;min-width:0}
+#tabs{display:flex;gap:2px;padding:6px 12px 0;background:var(--bg)}
+#tabs button{border:1px solid var(--line);border-bottom:none;background:var(--head);color:var(--text);padding:4px 14px;border-radius:6px 6px 0 0;cursor:pointer;font:inherit}
+#tabs button.on{background:var(--panel);font-weight:600}
+#gridwrap{flex:1;overflow:auto;background:var(--panel);margin:0 12px 12px;border:1px solid var(--line);user-select:none}
+table{border-collapse:separate;border-spacing:0;table-layout:fixed}
+td,th{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:2px 6px;overflow:hidden;white-space:nowrap;text-overflow:clip;position:relative;color:#111}
+td{background:#fff}
+th{background:var(--head);color:var(--mute);font-weight:500;text-align:center;font-size:12px;position:sticky;top:0;z-index:2;cursor:pointer}
+th.rh{left:0;z-index:3;position:sticky}
+th.corner{left:0;top:0;z-index:4}
+td.sel::after{content:"";position:absolute;inset:0;background:var(--sel);outline:1px solid var(--accent);outline-offset:-1px;pointer-events:none}
+td.mark{box-shadow:inset 0 0 0 2px #f59e0b}
+td.mark.done{box-shadow:inset 0 0 0 2px #22a06b}
+td.mark.q{box-shadow:inset 0 0 0 2px #8b5cf6}
+td.hl{box-shadow:inset 0 0 0 3px #ef4444}
+#right{width:380px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+#right section{padding:10px 12px;border-bottom:1px solid var(--line)}
+label{font-size:12px;color:var(--mute);display:block;margin-bottom:2px}
+input,textarea,select{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+textarea{resize:vertical;min-height:64px}
+button.b{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:4px 10px;border-radius:6px;cursor:pointer}
+button.b.p{background:var(--accent);border-color:var(--accent);color:#fff}
+button.b:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+#list{flex:1;overflow:auto;padding:0}
+.item{padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:hover{background:var(--head)}
+.item .r{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+.item .i{white-space:pre-wrap;margin:2px 0}
+.item .a{white-space:pre-wrap;font-size:13px;color:var(--mute);border-left:3px solid #22a06b;padding-left:8px;margin-top:4px}
+.st{font-size:11px;padding:0 6px;border-radius:8px;margin-left:6px}
+.st.未対応{background:#fef0c7;color:#93370d}.st.対応済{background:#d1fadf;color:#05603a}.st.質問{background:#ebe9fe;color:#5925dc}
+.hint{font-size:12px;color:var(--mute)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2430;color:#fff;padding:6px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+@media (max-width:800px){main{flex-direction:column}#right{width:auto;border-left:none;border-top:1px solid var(--line);max-height:50vh}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <span class="badge" id="mode"></span>
+  <span class="badge" id="conn"></span>
+  <span style="flex:1"></span>
+  <button class="b" id="reload" title="sheet.json と review.json を読み直す">再読み込み</button>
+</header>
+<main>
+  <div id="left">
+    <div id="tabs"></div>
+    <div id="gridwrap"><table id="grid"></table></div>
+  </div>
+  <aside id="right">
+    <section>
+      <label>選択範囲（ドラッグ / Shift で拡張 / Ctrl・Cmd で追加。列・行の見出しクリックで列・行ごと）</label>
+      <input id="range" placeholder="例: 明細!B2:D5, F3（直接入力もできる）">
+      <label style="margin-top:8px">指示</label>
+      <textarea id="instr" placeholder="この範囲をどうしたいか"></textarea>
+      <div class="row"><button class="b p" id="add">一覧に追加</button><span class="hint" id="selinfo"></span></div>
+    </section>
+    <section>
+      <div class="row" style="margin-top:0">
+        <button class="b p" id="save">保存</button>
+        <button class="b" id="copy">指示をコピー</button>
+        <select id="filter" style="width:auto"><option value="">すべて</option><option>未対応</option><option>対応済</option><option>質問</option></select>
+      </div>
+      <div class="hint" id="savemsg" style="margin-top:4px"></div>
+    </section>
+    <div id="list"></div>
+  </aside>
+</main>
+<div id="toast"></div>
+<script>
+const BOOT = /*__BOOT__*/null;
+let sheet = BOOT.sheet, review = BOOT.review, serverOk = !!BOOT.server;
+const LS_KEY = "sheet-preview:" + BOOT.key;
+const $ = (id) => document.getElementById(id);
+const tryLS = (fn) => { try { return fn(); } catch { return undefined; } };
+
+// ---- A1 ヘルパー ----
+const colName = (n) => { let s = ""; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+const colNum = (s) => [...s].reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0);
+const parseAddr = (a) => { const m = /^([A-Za-z]+)(\d+)$/.exec(a.trim()); return m ? { c: colNum(m[1].toUpperCase()), r: +m[2] } : null; };
+const parseRect = (t) => {
+  const [a, b] = t.split(":"); const p = parseAddr(a), q = parseAddr(b ?? a);
+  if (!p || !q) return null;
+  return { r1: Math.min(p.r, q.r), c1: Math.min(p.c, q.c), r2: Math.max(p.r, q.r), c2: Math.max(p.c, q.c) };
+};
+const rectText = (x) => (x.r1 === x.r2 && x.c1 === x.c2) ? colName(x.c1) + x.r1 : colName(x.c1) + x.r1 + ":" + colName(x.c2) + x.r2;
+const quoteSheet = (n) => /^[A-Za-z0-9_぀-ヿ一-鿿]+$/.test(n) ? n : "'" + n.replace(/'/g, "''") + "'";
+// "明細!B2:D5, F3, 集計!A1" -> [{sheet, rect}]
+function parseRanges(text) {
+  const out = []; let cur = null;
+  for (let part of text.split(",")) {
+    part = part.trim(); if (!part) continue;
+    const m = /^(?:'((?:[^']|'')+)'|([^!']+))!(.+)$/.exec(part);
+    if (m) { cur = m[1] ? m[1].replace(/''/g, "'") : m[2]; part = m[3]; }
+    const r = parseRect(part);
+    if (r) out.push({ sheet: cur ?? sheet.sheets[0].name, rect: r });
+  }
+  return out;
+}
+
+// ---- シート構造 ----
+let cur = 0; // 表示中シート index
+function dims(sh) {
+  let maxR = sh.rows || 0, maxC = sh.cols || 0;
+  const note = (r, c) => { if (r > maxR) maxR = r; if (c > maxC) maxC = c; };
+  for (const a of Object.keys(sh.cells || {})) { const p = parseAddr(a); if (p) note(p.r, p.c); }
+  for (const m of sh.merges || []) { const x = parseRect(m); if (x) note(x.r2, x.c2); }
+  for (const k of Object.keys(sh.colWidths || {})) note(0, colNum(k));
+  return { R: Math.max(maxR, 10), C: Math.max(maxC, 6) };
+}
+function mergeMap(sh) {
+  const origin = {}, covered = new Set();
+  for (const m of sh.merges || []) {
+    const x = parseRect(m); if (!x || (x.r1 === x.r2 && x.c1 === x.c2)) continue;
+    origin[x.r1 + "," + x.c1] = x;
+    for (let r = x.r1; r <= x.r2; r++) for (let c = x.c1; c <= x.c2; c++) if (r !== x.r1 || c !== x.c1) covered.add(r + "," + c);
+  }
+  return { origin, covered };
+}
+function expandMerges(sh, rect) { // 結合セルを部分選択しないよう矩形を広げる
+  const { origin } = mergeMap(sh); let ch = true; const x = { ...rect };
+  while (ch) { ch = false; for (const m of Object.values(origin)) {
+    const hit = m.r1 <= x.r2 && m.r2 >= x.r1 && m.c1 <= x.c2 && m.c2 >= x.c1;
+    if (hit && (m.r1 < x.r1 || m.r2 > x.r2 || m.c1 < x.c1 || m.c2 > x.c2)) {
+      x.r1 = Math.min(x.r1, m.r1); x.r2 = Math.max(x.r2, m.r2); x.c1 = Math.min(x.c1, m.c1); x.c2 = Math.max(x.c2, m.c2); ch = true; } } }
+  return x;
+}
+
+// ---- 選択状態 ----
+let rects = [], anchor = null, dragging = false;
+const inRects = (r, c) => rects.some((x) => r >= x.r1 && r <= x.r2 && c >= x.c1 && c <= x.c2);
+function selText() {
+  if (!rects.length) return "";
+  return quoteSheet(sheet.sheets[cur].name) + "!" + rects.map(rectText).join(", ");
+}
+
+const fmtVal = (cell) => (typeof cell.v === "number" && /#,##0/.test(cell.numFmt || "")) ? cell.v.toLocaleString("ja-JP") : String(cell.v);
+// ---- 描画 ----
+let hlRanges = [];
+function marksFor(sname) { // セル -> 状態
+  const m = {};
+  for (const it of review.items) for (const { sheet: s, rect } of parseRanges(it.range)) {
+    if (s !== sname) continue;
+    const cls = it.status === "対応済" ? "done" : it.status === "質問" ? "q" : "";
+    for (let r = rect.r1; r <= rect.r2; r++) for (let c = rect.c1; c <= rect.c2; c++) { const k = r + "," + c; if (!(k in m) || cls === "") m[k] = cls; }
+  }
+  return m;
+}
+function renderTabs() {
+  const t = $("tabs"); t.innerHTML = "";
+  sheet.sheets.forEach((s, i) => { const b = document.createElement("button"); b.textContent = s.name; if (i === cur) b.className = "on";
+    b.onclick = () => { cur = i; rects = []; anchor = null; render(); }; t.appendChild(b); });
+}
+function render() {
+  if (cur >= sheet.sheets.length) cur = 0;
+  $("title").textContent = sheet.title || "(無題)";
+  const mode = sheet.mode === "data" ? "実データ確認" : "スキーマ確認";
+  $("mode").textContent = mode;
+  renderTabs();
+  const sh = sheet.sheets[cur], { R, C } = dims(sh), { origin, covered } = mergeMap(sh), marks = marksFor(sh.name);
+  const cw = (c) => (sh.colWidths || {})[colName(c)] ?? sh.defaultColWidth ?? 90;
+  const rh = (r) => (sh.rowHeights || {})[r] ?? sh.defaultRowHeight ?? 24;
+  let h = "<colgroup><col style='width:44px'>"; for (let c = 1; c <= C; c++) h += `<col style='width:${cw(c)}px'>`; h += "</colgroup>";
+  h += "<tr><th class='corner'></th>"; for (let c = 1; c <= C; c++) h += `<th data-col='${c}'>${colName(c)}</th>`; h += "</tr>";
+  for (let r = 1; r <= R; r++) {
+    h += `<tr style='height:${rh(r)}px'><th class='rh' data-row='${r}'>${r}</th>`;
+    for (let c = 1; c <= C; c++) {
+      const k = r + "," + c; if (covered.has(k)) continue;
+      const cell = (sh.cells || {})[colName(c) + r] || {}, m = origin[k];
+      const st = [];
+      if (cell.bg) st.push("background:" + cell.bg); if (cell.color) st.push("color:" + cell.color);
+      if (cell.bold) st.push("font-weight:700"); if (cell.size) st.push(`font-size:${cell.size}px`);
+      if (cell.align) st.push("text-align:" + cell.align);
+      if (cell.valign) st.push("vertical-align:" + cell.valign);
+      if (cell.wrap) st.push("white-space:normal");
+      const rect = m || { r1: r, c1: c, r2: r, c2: c };
+      let cls = ""; // 結合セルは範囲内のいずれかが対象ならマーク
+      for (let rr = rect.r1; rr <= rect.r2 && !cls; rr++) for (let cc = rect.c1; cc <= rect.c2; cc++) { const mk = marks[rr + "," + cc]; if (mk !== undefined) { cls = " mark" + (mk ? " " + mk : ""); break; } }
+      const hl = hlRanges.some((x) => x.sheet === sh.name && x.rect.r1 <= rect.r2 && x.rect.r2 >= rect.r1 && x.rect.c1 <= rect.c2 && x.rect.c2 >= rect.c1);
+      const sel = inRects(r, c) ? " sel" : "";
+      const span = m ? ` rowspan='${m.r2 - m.r1 + 1}' colspan='${m.c2 - m.c1 + 1}'` : "";
+      const v = cell.v === undefined || cell.v === null ? "" : fmtVal(cell).replace(/[&<>]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x]));
+      h += `<td data-r='${r}' data-c='${c}'${span} class='${(cls + sel + (hl ? " hl" : "")).trim()}' style='${st.join(";")}'>${v}</td>`;
+    }
+    h += "</tr>";
+  }
+  $("grid").innerHTML = h;
+  refreshSel(); renderList();
+}
+function refreshSel() {
+  $("range").value = document.activeElement === $("range") ? $("range").value : selText();
+  $("selinfo").textContent = rects.length ? `${rects.length} 範囲を選択中` : "未選択";
+  document.querySelectorAll("#grid td").forEach((td) => {
+    const r = +td.dataset.r, c = +td.dataset.c, rs = td.rowSpan || 1, cs = td.colSpan || 1;
+    let s = false; for (let a = r; a < r + rs && !s; a++) for (let b = c; b < c + cs; b++) if (inRects(a, b)) { s = true; break; }
+    td.classList.toggle("sel", s);
+  });
+}
+
+// ---- 選択操作 ----
+const cellOf = (e) => e.target.closest && e.target.closest("td");
+$("grid").addEventListener("mousedown", (e) => {
+  const sh = sheet.sheets[cur], { R, C } = dims(sh);
+  const th = e.target.closest("th");
+  let rc = null;
+  if (th && th.dataset.col) { const c = +th.dataset.col; rc = { r1: 1, c1: c, r2: R, c2: c }; }
+  else if (th && th.dataset.row) { const r = +th.dataset.row; rc = { r1: r, c1: 1, r2: r, c2: C }; }
+  if (rc) { rc = expandMerges(sh, rc); if (e.ctrlKey || e.metaKey) rects.push(rc); else rects = [rc]; anchor = null; refreshSel(); return; }
+  const td = cellOf(e); if (!td) return;
+  const r = +td.dataset.r, c = +td.dataset.c, here = expandMerges(sh, { r1: r, c1: c, r2: r, c2: c });
+  if (e.shiftKey && anchor && rects.length) { rects[rects.length - 1] = expandMerges(sh, { r1: Math.min(anchor.r, r), c1: Math.min(anchor.c, c), r2: Math.max(anchor.r, r), c2: Math.max(anchor.c, c) }); }
+  else { anchor = { r, c }; if (e.ctrlKey || e.metaKey) rects.push(here); else rects = [here]; dragging = true; }
+  refreshSel(); e.preventDefault();
+});
+$("grid").addEventListener("mouseover", (e) => {
+  if (!dragging) return; const td = cellOf(e); if (!td || !anchor) return;
+  const r = +td.dataset.r, c = +td.dataset.c, sh = sheet.sheets[cur];
+  rects[rects.length - 1] = expandMerges(sh, { r1: Math.min(anchor.r, r), c1: Math.min(anchor.c, c), r2: Math.max(anchor.r, r), c2: Math.max(anchor.c, c) });
+  refreshSel();
+});
+window.addEventListener("mouseup", () => { dragging = false; });
+$("range").addEventListener("input", () => { // 直接入力 -> 選択へ反映
+  const ps = parseRanges($("range").value).filter((p) => p.sheet === sheet.sheets[cur].name);
+  rects = ps.map((p) => p.rect); document.querySelectorAll("#grid td").forEach(() => {}); refreshSelCells();
+});
+$("range").addEventListener("blur", () => refreshSel());
+function refreshSelCells() { const keep = $("range").value; refreshSel(); $("range").value = keep; }
+
+// ---- 指示一覧 ----
+const nextId = () => "r" + (Math.max(0, ...review.items.map((i) => +String(i.id).replace(/\D/g, "") || 0)) + 1);
+function renderList() {
+  const f = $("filter").value, box = $("list"); box.innerHTML = "";
+  const esc = (s) => String(s).replace(/[&<>]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x]));
+  review.items.forEach((it, idx) => {
+    if (f && it.status !== f) return;
+    const d = document.createElement("div"); d.className = "item";
+    d.innerHTML = `<div><span class="r">${esc(it.range)}</span><span class="st ${it.status}">${it.status}</span></div><div class="i">${esc(it.instruction)}</div>` +
+      (it.agent_reply ? `<div class="a">${esc(it.agent_reply)}</div>` : "") +
+      `<div class="row"><select data-s="${idx}" style="width:auto"><option>未対応</option><option>対応済</option><option>質問</option></select><button class="b" data-e="${idx}">編集</button><button class="b" data-d="${idx}">削除</button></div>`;
+    d.querySelector("select").value = it.status;
+    d.onclick = (e) => { if (e.target.closest(".row")) return; hlRanges = parseRanges(it.range);
+      const first = hlRanges[0]; if (first) { const i = sheet.sheets.findIndex((s) => s.name === first.sheet); if (i >= 0) cur = i; }
+      render(); const el = document.querySelector("#grid td.hl"); if (el) el.scrollIntoView({ block: "center", inline: "center" }); setTimeout(() => { hlRanges = []; render(); }, 1800); };
+    d.querySelector("select").onchange = (e) => { it.status = e.target.value; persist(); render(); };
+    d.querySelector("[data-d]").onclick = () => { if (confirm("この指示を削除しますか")) { review.items.splice(idx, 1); persist(); render(); } };
+    d.querySelector("[data-e]").onclick = () => { const t = prompt("指示を編集", it.instruction); if (t !== null) { it.instruction = t; persist(); render(); } };
+    box.appendChild(d);
+  });
+  if (!box.children.length) box.innerHTML = '<div class="item hint">指示はまだありません</div>';
+}
+$("filter").onchange = renderList;
+$("add").onclick = () => {
+  const range = $("range").value.trim(), instruction = $("instr").value.trim();
+  if (!range) return toast("範囲を選択してください");
+  if (!instruction) return toast("指示を入力してください");
+  review.items.push({ id: nextId(), range, instruction, status: "未対応", agent_reply: "" });
+  $("instr").value = ""; rects = []; persist(); render(); toast("追加しました（保存で確定）");
+};
+
+// ---- 保存 / コピー / 再読み込み ----
+function persist() { tryLS(() => localStorage.setItem(LS_KEY, JSON.stringify(review))); }
+function setConn() {
+  $("conn").textContent = serverOk ? "サーバ接続中" : "サーバなし（コピペ運用）";
+  $("conn").className = "badge " + (serverOk ? "ok" : "ng");
+}
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 1800); }
+const reviewJson = () => JSON.stringify({ sheet: review.sheet || BOOT.key, items: review.items }, null, 2);
+$("save").onclick = async () => {
+  persist();
+  try {
+    const r = await fetch("/api/review", { method: "POST", headers: { "content-type": "application/json" }, body: reviewJson() });
+    const j = await r.json(); if (!j.ok) throw new Error(j.error);
+    serverOk = true; setConn(); $("savemsg").textContent = `保存しました: ${j.path}（${j.count} 件）`; toast("保存しました");
+  } catch (e) {
+    serverOk = false; setConn(); $("savemsg").textContent = "サーバに保存できませんでした。ブラウザに保持済み。「指示をコピー」でチャットに貼ってください。";
+  }
+};
+$("copy").onclick = async () => {
+  const txt = reviewJson();
+  try { await navigator.clipboard.writeText(txt); toast("JSON をコピーしました"); }
+  catch { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("JSON をコピーしました"); }
+};
+$("reload").onclick = async () => {
+  try {
+    sheet = await (await fetch("/api/sheet", { cache: "no-store" })).json();
+    review = await (await fetch("/api/review", { cache: "no-store" })).json();
+    serverOk = true; setConn(); persist(); render(); toast("読み直しました");
+  } catch { serverOk = false; setConn(); toast("サーバに接続できません"); }
+};
+
+// 起動時: サーバなし（静的 HTML）なら localStorage の下書きを復元
+if (!BOOT.server) {
+  const saved = tryLS(() => localStorage.getItem(LS_KEY));
+  if (saved) { try { const r = JSON.parse(saved); if (r && Array.isArray(r.items) && (!review.items.length)) review = r; } catch {} }
+}
+setConn(); render();
+</script>
+</body>
+</html>

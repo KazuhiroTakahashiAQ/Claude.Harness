@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: schema-review-roundtrip
+expected_outcome: |
+  経費精算管理表の sheet.json（2 シート、色・列幅・結合を含む）を作り、sheet-preview のサーバ起動コマンドを示している。
+  スキーマ確認モードとして mode が schema になっている。

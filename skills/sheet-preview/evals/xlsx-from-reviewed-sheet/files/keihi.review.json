@@ -1,0 +1,3 @@
+{"sheet":"keihi.sheet.json","items":[
+{"id":"r1","range":"明細!F3:F4","instruction":"備考列の幅を 300px にする","status":"未対応","agent_reply":""},
+{"id":"r2","range":"集計!B3:C4","instruction":"いい感じにして","status":"未対応","agent_reply":""}]}
