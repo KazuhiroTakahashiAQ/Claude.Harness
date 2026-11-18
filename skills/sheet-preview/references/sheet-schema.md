@@ -11,6 +11,8 @@ HTML 描画と xlsx 変換の正本。ファイル名は `<名前>.sheet.json`�
 | `title` | string | 推奨 | HTML ヘッダーに表示 |
 | `mode` | `"schema"` \| `"data"` | 推奨 | スキーマ確認 / 実データ確認。表示ラベルのみに使う |
 | `sheets` | Sheet[] | 必須 | 1 枚以上。順序がタブ順 |
+| `meta` | `{task?, title?, created?}` | 任意 | `task` = タスク名（タブ名 `[タスク名]`・一覧の絞り込み。`--task` が優先）。`title` = 表示名。`created` = ISO 日時（一覧の「作成」） |
+| `rev` | integer | 自動 | 書き込みのたびにサーバが +1。直接書くエージェントも +1 する。競合検知に使う |
 
 ## Sheet
 

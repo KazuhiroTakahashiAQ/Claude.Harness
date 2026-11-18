@@ -1,0 +1,7 @@
+{
+  "_comment": "POST /api/review/patch?f=<key> に送る ops の例。確認を 1 件立て、人の返事のあとに反映済みと返す。",
+  "ops": [
+    { "op": "add", "range": "明細!C3", "kind": "確認", "name": "claude", "text": "数量の単位は個でよいか。" },
+    { "op": "reply", "id": "t1", "name": "claude", "text": "箱単位に直した。", "status": "対応済" }
+  ]
+}

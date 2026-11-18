@@ -1,0 +1,36 @@
+{
+  "sheet": "confirm.sheet.json",
+  "rev": 5,
+  "threads": [
+    {
+      "id": "t1",
+      "range": "明細!C3",
+      "kind": "確認",
+      "status": "確認待ち",
+      "messages": [
+        { "author": "agent", "name": "claude", "text": "数量の単位は個でよいか。箱単位なら列見出しを直す。", "at": "2026-11-18T05:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "t2",
+      "range": "集計!*",
+      "kind": "確認",
+      "status": "解決",
+      "messages": [
+        { "author": "agent", "name": "claude", "text": "集計シートは月別でよいか。四半期別も要るか。", "at": "2026-11-18T05:01:00.000Z" },
+        { "author": "human", "text": "月別だけでよい。", "at": "2026-11-18T05:12:00.000Z" },
+        { "author": "agent", "name": "claude", "text": "月別のまま確定した。", "at": "2026-11-18T05:13:00.000Z" }
+      ]
+    },
+    {
+      "id": "t3",
+      "range": "明細!B2:D2",
+      "kind": "指示",
+      "status": "対応済",
+      "messages": [
+        { "author": "human", "text": "見出しの背景を濃い青にして", "at": "2026-11-18T04:50:00.000Z" },
+        { "author": "agent", "name": "claude", "text": "B2:D2 の背景を #1f3a5f、文字を白にした。", "at": "2026-11-18T04:55:00.000Z" }
+      ]
+    }
+  ]
+}

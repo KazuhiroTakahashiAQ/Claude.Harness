@@ -1,0 +1,196 @@
+{
+  "title": "月次売上管理表（確認メモの例）",
+  "mode": "schema",
+  "sheets": [
+    {
+      "name": "明細",
+      "colWidths": {
+        "A": 90,
+        "B": 160,
+        "C": 80,
+        "D": 100,
+        "E": 110,
+        "F": 200
+      },
+      "rowHeights": {
+        "1": 36
+      },
+      "freeze": "B3",
+      "merges": [
+        "A1:F1"
+      ],
+      "cells": {
+        "A1": {
+          "v": "売上明細",
+          "bg": "#1f3a5f",
+          "color": "#ffffff",
+          "bold": true,
+          "align": "center",
+          "size": 16
+        },
+        "A2": {
+          "v": "日付",
+          "bg": "#dbe5f1",
+          "bold": true,
+          "align": "center"
+        },
+        "B2": {
+          "v": "商品名",
+          "bg": "#dbe5f1",
+          "bold": true,
+          "align": "center"
+        },
+        "C2": {
+          "v": "数量",
+          "bg": "#dbe5f1",
+          "bold": true,
+          "align": "center"
+        },
+        "D2": {
+          "v": "単価",
+          "bg": "#dbe5f1",
+          "bold": true,
+          "align": "center"
+        },
+        "E2": {
+          "v": "金額",
+          "bg": "#dbe5f1",
+          "bold": true,
+          "align": "center"
+        },
+        "F2": {
+          "v": "備考",
+          "bg": "#dbe5f1",
+          "bold": true,
+          "align": "center"
+        },
+        "A3": {
+          "v": "2026-11-01",
+          "align": "center"
+        },
+        "B3": {
+          "v": "サンプル商品A"
+        },
+        "C3": {
+          "v": 10,
+          "align": "right"
+        },
+        "D3": {
+          "v": 1200,
+          "align": "right",
+          "numFmt": "#,##0"
+        },
+        "E3": {
+          "v": "=C3*D3",
+          "align": "right",
+          "numFmt": "#,##0"
+        },
+        "F3": {
+          "v": "",
+          "bg": "#fff9db",
+          "wrap": true
+        },
+        "A4": {
+          "v": "2026-11-02",
+          "align": "center"
+        },
+        "B4": {
+          "v": "サンプル商品B"
+        },
+        "C4": {
+          "v": 3,
+          "align": "right"
+        },
+        "D4": {
+          "v": 8500,
+          "align": "right",
+          "numFmt": "#,##0"
+        },
+        "E4": {
+          "v": "=C4*D4",
+          "align": "right",
+          "numFmt": "#,##0"
+        },
+        "F4": {
+          "v": "",
+          "bg": "#fff9db",
+          "wrap": true
+        },
+        "A5": {
+          "v": "合計",
+          "bg": "#f1f3f5",
+          "bold": true,
+          "align": "center"
+        },
+        "E5": {
+          "v": "=SUM(E3:E4)",
+          "bg": "#f1f3f5",
+          "bold": true,
+          "align": "right",
+          "numFmt": "#,##0"
+        }
+      }
+    },
+    {
+      "name": "集計",
+      "colWidths": {
+        "A": 140,
+        "B": 120,
+        "C": 120
+      },
+      "merges": [
+        "A1:C1",
+        "A3:A4"
+      ],
+      "cells": {
+        "A1": {
+          "v": "商品別集計",
+          "bg": "#2b6e44",
+          "color": "#ffffff",
+          "bold": true,
+          "align": "center"
+        },
+        "A2": {
+          "v": "区分",
+          "bg": "#d3f0dc",
+          "bold": true
+        },
+        "B2": {
+          "v": "件数",
+          "bg": "#d3f0dc",
+          "bold": true,
+          "align": "center"
+        },
+        "C2": {
+          "v": "金額",
+          "bg": "#d3f0dc",
+          "bold": true,
+          "align": "center"
+        },
+        "A3": {
+          "v": "商品群",
+          "valign": "middle"
+        },
+        "B3": {
+          "v": "（要定義）",
+          "color": "#c92a2a"
+        },
+        "C3": {
+          "v": ""
+        },
+        "B4": {
+          "v": ""
+        },
+        "C4": {
+          "v": ""
+        }
+      }
+    }
+  ],
+  "meta": {
+    "task": "sample-task",
+    "title": "確認メモの例",
+    "created": "2026-11-18T00:00:00.000Z"
+  },
+  "rev": 1
+}

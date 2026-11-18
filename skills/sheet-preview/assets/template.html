@@ -39,19 +39,23 @@ th.drop-t{box-shadow:inset 0 3px 0 var(--accent)}th.drop-b{box-shadow:inset 0 -3
 .rz-c{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:6}
 .rz-r{position:absolute;left:0;bottom:-3px;height:7px;width:100%;cursor:row-resize;z-index:6}
 td.sel::after{content:"";position:absolute;inset:0;background:var(--sel);outline:1px solid var(--accent);outline-offset:-1px;pointer-events:none}
-td.mark{box-shadow:inset 0 0 0 2px #f59e0b}
-td.mark.done{box-shadow:inset 0 0 0 2px #22a06b}
-td.mark.q{box-shadow:inset 0 0 0 2px #8b5cf6}
+.k-todo{--kc:#f59e0b}.k-wait{--kc:#ef4444}.k-ask{--kc:#8b5cf6}.k-memo{--kc:#667085}.k-done{--kc:#22a06b}
+td.tri::before,th.corner.tri::before{content:"";position:absolute;top:0;right:0;border-style:solid;border-width:0 11px 11px 0;border-color:transparent var(--kc) transparent transparent;z-index:1;pointer-events:none}
+td.tri.k-wait::before,th.corner.tri.k-wait::before{border-width:0 15px 15px 0}
+td.tri.k-wait{box-shadow:inset 0 0 0 2px var(--kc)}
 td.hl{box-shadow:inset 0 0 0 3px #ef4444}
 #ov{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:10}
 #ov svg{position:absolute;inset:0;width:100%;height:100%}
-.bubble{position:absolute;width:240px;background:var(--panel);border:1px solid var(--line);border-left:4px solid #f59e0b;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:6px 8px;pointer-events:auto;font-size:13px}
-.bubble.done{border-left-color:#22a06b}.bubble.q{border-left-color:#8b5cf6}.bubble.new{border-left-color:var(--accent)}
+.bubble{position:absolute;width:260px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--kc,#f59e0b);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:6px 8px;pointer-events:auto;font-size:13px}
+.bubble.new{border-left-color:var(--accent)}.bubble.k-wait{background:linear-gradient(rgba(239,68,68,.1),rgba(239,68,68,.1)),var(--panel)}
+.bubble .msgs{max-height:220px;overflow:auto}
+.bubble textarea{min-height:44px}
 .bubble.active{box-shadow:0 0 0 2px var(--accent),0 4px 14px rgba(0,0,0,.18)}
-.bubble .t{white-space:pre-wrap;margin:2px 0}
-.bubble .a{white-space:pre-wrap;color:var(--mute);border-left:3px solid #22a06b;padding-left:6px;margin-top:4px}
+.msg{white-space:pre-wrap;margin:4px 0;padding-left:8px;border-left:3px solid var(--line)}
+.msg.agent{border-left-color:#22a06b}.msg.human{border-left-color:var(--accent)}
+.msg .who{display:block;font-size:11px;color:var(--mute)}
+.kd{font-size:11px;padding:0 6px;border-radius:8px;border:1px solid var(--kc,var(--line));color:var(--kc,var(--mute))}
 .bubble .x{float:right;cursor:pointer;color:var(--mute);border:none;background:none;font-size:16px;line-height:1;padding:0 2px}
-.bubble textarea{min-height:56px}
 #editor{position:absolute;z-index:20;font:inherit;color:#111;background:#fff;border:2px solid var(--accent);border-radius:0;padding:2px 6px;resize:none;min-height:0;overflow:auto}
 #tabs{display:flex;align-items:flex-end;gap:2px;padding:0 4px 3px;overflow-x:auto;flex:none}
 #ftabs{display:flex;align-items:flex-end;gap:2px;padding:4px 8px 0;background:var(--head);border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
@@ -84,15 +88,32 @@ input,textarea,select{width:100%;font:inherit;color:var(--text);background:var(-
 textarea{resize:vertical;min-height:64px}
 .row{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
 #list{flex:1;overflow:auto;padding:0}
-.item{padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-left:4px solid transparent}
+.item{padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-left:4px solid var(--kc,transparent)}
+.item.k-wait{background:rgba(239,68,68,.10)}
 .item:hover{background:var(--head)}
 .item.on{border-left-color:var(--accent);background:var(--head)}
 .item.gone{opacity:.65}
 .item .r{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
-.item .i{white-space:pre-wrap;margin:2px 0}
-.item .a{white-space:pre-wrap;font-size:13px;color:var(--mute);border-left:3px solid #22a06b;padding-left:8px;margin-top:4px}
+.item textarea{min-height:40px}
 .st{font-size:11px;padding:0 6px;border-radius:8px;margin-left:6px}
-.st.未対応{background:#fef0c7;color:#93370d}.st.対応済{background:#d1fadf;color:#05603a}.st.質問{background:#ebe9fe;color:#5925dc}.st.削除{background:#fee4e2;color:#b42318}
+.st.未対応{background:#fef0c7;color:#93370d}.st.対応済,.st.解決{background:#d1fadf;color:#05603a}.st.質問{background:#ebe9fe;color:#5925dc}.st.削除{background:#fee4e2;color:#b42318}.st.確認待ち{background:#fee4e2;color:#b42318;font-weight:700}
+.badge.wait{color:#b42318;border-color:#b42318;background:#fee4e2;cursor:pointer;font-weight:700}
+#ftabs .ft .dot.w{color:#b42318;font-weight:700}
+#ftabs .ft .cx{margin-left:6px;color:var(--mute);cursor:pointer}#ftabs .ft .cx:hover{color:var(--text)}
+#ftabs .ft.home{font-weight:600}
+#listview{display:none;flex:1;overflow:auto;padding:10px 14px;min-height:0}
+body.listmode #listview{display:block}
+body.listmode header,body.listmode #toolbar,body.listmode #banner,body.listmode main{display:none}
+#listview .note{padding:6px 10px;border-radius:6px;background:var(--warn);margin-bottom:8px;font-size:13px}
+#listview .ctl{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+#listview .ctl input{width:260px}#listview .ctl select{width:auto}
+#listview table{width:100%;table-layout:auto;border:1px solid var(--line);background:var(--panel)}
+#listview th{position:static;background:var(--head);text-align:left;cursor:default;font-size:12px}
+#listview td{background:var(--panel);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px}
+#listview tr.row-f{cursor:pointer}#listview tr.row-f:hover td{background:var(--head)}
+#listview tr.miss td{opacity:.6}
+#listview td.num{text-align:right}
+#listview h2{font-size:14px;margin:14px 0 4px}
 .hint{font-size:12px;color:var(--mute)}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2430;color:#fff;padding:6px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
 #toast.on{opacity:1}
@@ -106,6 +127,7 @@ textarea{resize:vertical;min-height:64px}
   <span class="badge" id="mode"></span>
   <span class="badge" id="conn"></span>
   <span class="badge" id="dirty" style="display:none">未保存</span>
+  <span class="badge wait" id="waitBadge" style="display:none" title="確認待ちのスレッド。クリックで絞り込み"></span>
   <span style="flex:1"></span>
   <button class="b" id="tPane" title="右のコメント一覧パネルを折りたたむ / 開く">一覧 ▸</button>
   <button class="b" id="reload" title="sheet.json と review.json を読み直す（画面の未保存の変更は失われる）">再読み込み</button>
@@ -130,6 +152,7 @@ textarea{resize:vertical;min-height:64px}
   <button id="copy">指示をコピー</button>
 </div>
 <div id="banner"></div>
+<div id="listview"><div id="lvNote"></div><div class="ctl"><input id="lvQ" placeholder="検索（タスク・ファイル名・パス）"><select id="lvTask"></select><span id="lvInfo" class="hint"></span></div><div id="lvTable"></div><div id="lvTrash"></div></div>
 <main>
   <div id="left">
     <div id="gridhost">
@@ -143,14 +166,14 @@ textarea{resize:vertical;min-height:64px}
     <section>
       <label>選択範囲（ドラッグ / Shift で拡張 / Ctrl・Cmd で追加。見出しクリックで列・行ごと）</label>
       <input id="range" placeholder="例: 明細!B2:D5, F3（直接入力もできる）">
-      <label style="margin-top:8px">指示（エージェントへ。セルの文字を直接直すときは、セルをダブルクリック）</label>
-      <textarea id="instr" placeholder="この範囲をどうしたいか"></textarea>
-      <div class="row"><button class="b p" id="add">一覧に追加</button><span class="hint" id="selinfo"></span></div>
+      <label style="margin-top:8px">スレッドを追加（指示 = 直してほしい / 確認 = 聞きたい / メモ。セルの文字を直接直すときは、セルをダブルクリック）</label>
+      <textarea id="instr" placeholder="この範囲について"></textarea>
+      <div class="row"><select id="kind" style="width:auto"><option>指示</option><option>確認</option><option>メモ</option></select><button class="b p" id="add">追加</button><span class="hint" id="selinfo"></span></div>
     </section>
     <section>
       <div class="row" style="margin-top:0">
-        <span class="hint">コメント一覧</span>
-        <select id="filter" style="width:auto"><option value="">すべて</option><option>未対応</option><option>対応済</option><option>質問</option></select>
+        <span class="hint">スレッド一覧</span>
+        <select id="filter" style="width:auto"><option value="">すべて</option><option value="確認待ち">確認待ち</option><option value="open">未解決</option><option value="未対応">未対応</option><option value="対応済">対応済</option><option value="解決">解決</option><option value="kind:指示">指示</option><option value="kind:確認">確認</option><option value="kind:メモ">メモ</option></select>
       </div>
       <div class="hint" id="savemsg" style="margin-top:4px"></div>
     </section>
@@ -169,11 +192,12 @@ let base = { sheet: null, review: null };
 let dirty = { sheet: false, review: false };
 let conflictNow = null; // 表示中のファイルで検知した外部更新（["sheet.json", ...]）
 const FILES = new Map(); // key -> 状態
-let curKey = null, busy = false;
+let curKey = null, busy = false, listMode = false;
+let rev = { sheet: 0, review: 0 };
 const lsKey = (k) => "sheet-preview:v2:" + k;
 const $ = (id) => document.getElementById(id);
 const tryLS = (fn) => { try { return fn(); } catch { return undefined; } };
-const esc = (s) => String(s).replace(/[&<>]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x]));
+const esc = (s) => String(s).replace(/[&<>"]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[x]));
 const HDR_H = 24, RH_W = 44;
 
 // ---- A1 ヘルパー ----
@@ -194,14 +218,21 @@ function splitRanges(text) {
     part = part.trim(); if (!part) continue;
     const m = /^(?:'((?:[^']|'')+)'|([^!']+))!(.+)$/.exec(part);
     if (m) { cur = m[1] ? m[1].replace(/''/g, "'") : m[2]; part = m[3]; }
+    if (part === "*") { out.push({ sheet: m ? cur : null, rect: null, star: true, raw: "*" }); continue; } // * = 全シート / Sheet!* = そのシート全体
     out.push({ sheet: cur ?? sheet.sheets[0].name, rect: parseRect(part), raw: part });
   }
   return out;
 }
+// 星（全体への確認）は左上セルに目印を出す
+const anchorRect = (p) => p.star ? { r1: 1, c1: 1, r2: 1, c2: 1 } : p.rect;
+const partOnSheet = (p, name) => p.star ? (p.sheet === null || p.sheet === name) : p.sheet === name;
 const parseRanges = (text) => splitRanges(text).filter((p) => p.rect);
 function joinRanges(parts) {
   let last = null, out = [];
-  for (const p of parts) { const t = p.rect ? rectText(p.rect) : p.raw; out.push((p.sheet !== last ? quoteSheet(p.sheet) + "!" : "") + t); last = p.sheet; }
+  for (const p of parts) {
+    if (p.star && p.sheet === null) { out.push("*"); continue; }
+    const t = p.rect ? rectText(p.rect) : p.raw; out.push((p.sheet !== last ? quoteSheet(p.sheet) + "!" : "") + t); last = p.sheet;
+  }
   return out.join(", ");
 }
 
@@ -248,20 +279,21 @@ const rhOf = (sh, r) => (sh.rowHeights || {})[r] ?? sh.defaultRowHeight ?? 24;
 
 // ---- 履歴（Undo / Redo） ----
 let undoStack = [], redoStack = [];
-const snap = () => JSON.stringify({ sheet, review });
+const snap = () => JSON.stringify({ sheet, threads: review.threads });
 function pushUndo() { undoStack.push(snap()); if (undoStack.length > 200) undoStack.shift(); redoStack = []; }
-function restore(s) { const o = JSON.parse(s); sheet = o.sheet; review = o.review; rects = []; anchor = null; if (cur >= sheet.sheets.length) cur = sheet.sheets.length - 1; recomputeDirty(); afterChange(); }
+function restore(s) { const o = JSON.parse(s); sheet = o.sheet; review.threads = o.threads; rects = []; anchor = null; if (cur >= sheet.sheets.length) cur = sheet.sheets.length - 1; recomputeDirty(); afterChange(); }
 function undo() { if (!undoStack.length) return toast("これ以上戻せません"); redoStack.push(snap()); restore(undoStack.pop()); }
 function redo() { if (!redoStack.length) return toast("やり直しはありません"); undoStack.push(snap()); restore(redoStack.pop()); }
 // 変更はすべてここを通す。sheet / review のどちらが変わったかで未保存フラグを立てる
 function mutate(fn) {
+  if (listMode || busy || !curKey) return false;
   pushUndo(); const r = fn();
   if (r === false) { undoStack.pop(); return false; }
   recomputeDirty(); afterChange(); return true;
 }
 // 未保存かどうかは「最後に読み込んだ / 保存した内容」との差で決める（Undo で元に戻れば未保存でなくなる）
 let saved = { sheet: "", review: "" };
-function recomputeDirty() { dirty.sheet = JSON.stringify(sheet) !== saved.sheet; dirty.review = JSON.stringify(review) !== saved.review; }
+function recomputeDirty() { dirty.sheet = JSON.stringify(sheet) !== saved.sheet; dirty.review = JSON.stringify(review.threads) !== saved.review; }
 function afterChange() { persist(); render(); }
 
 // ---- 行・列の構造変更（共通の写像で、セル・結合・幅/高さ・固定・指示の範囲を一度に追従） ----
@@ -295,7 +327,7 @@ function applyAxis(sh, axis, f, kind, n) {
 }
 // 指示の range を追従。消えた範囲だけの指示は deleted: true（「対象が削除された」）にする
 function remapReview(sheetName, axis, f) {
-  for (const it of review.items) { if (it.deleted) continue;
+  for (const it of review.threads) { if (it.deleted) continue;
     const parts = splitRanges(it.range), out = []; let touched = false;
     for (const p of parts) { if (p.sheet !== sheetName || !p.rect) { out.push(p); continue; }
       touched = true; const y = mapRectAxis(p.rect, axis, f); if (y) out.push({ ...p, rect: y }); }
@@ -332,24 +364,38 @@ const fmtVal = (cell) => (typeof cell.v === "number" && /#,##0/.test(cell.numFmt
 
 // ---- 描画 ----
 let hlRanges = [], activeId = null, composer = null;
+// スレッドの色クラスと優先度（確認待ち > 指示の未対応 > 質問・確認 > メモ > 解決済み）
+const RANK = { "k-wait": 5, "k-todo": 4, "k-ask": 3, "k-memo": 2, "k-done": 1 };
+function kcls(t) {
+  if (t.status === "確認待ち") return "k-wait";
+  if (t.status === "解決" || t.status === "対応済") return "k-done";
+  if (t.status === "質問" || t.kind === "確認") return "k-ask";
+  return t.kind === "メモ" ? "k-memo" : "k-todo";
+}
+const isWait = (t) => !t.deleted && t.status === "確認待ち";
+const waitCount = () => review.threads.filter(isWait).length;
+// 目印は左上の三角。星（全体）の目印はキー "0,0"（角のセル）に置く
 function marksFor(sname) {
   const m = {};
-  for (const it of review.items) { if (it.deleted) continue; for (const { sheet: s, rect } of parseRanges(it.range)) {
-    if (s !== sname) continue;
-    const cls = it.status === "対応済" ? "done" : it.status === "質問" ? "q" : "";
-    for (let r = rect.r1; r <= rect.r2; r++) for (let c = rect.c1; c <= rect.c2; c++) { const k = r + "," + c; if (!(k in m) || cls === "") m[k] = cls; } } }
+  for (const it of review.threads) { if (it.deleted) continue; const cls = kcls(it);
+    for (const p of splitRanges(it.range)) {
+      if (!partOnSheet(p, sname)) continue;
+      const put = (k) => { if (!(k in m) || RANK[cls] > RANK[m[k]]) m[k] = cls; };
+      if (p.star) { put("0,0"); continue; }
+      if (!p.rect) continue;
+      for (let r = p.rect.r1; r <= p.rect.r2; r++) for (let c = p.rect.c1; c <= p.rect.c2; c++) put(r + "," + c); } }
   return m;
 }
 function render() {
   if (cur >= sheet.sheets.length) cur = 0;
-  $("title").textContent = sheet.title || "(無題)"; document.title = (sheet.title || curKey) + " - sheet-preview";
+  $("title").textContent = sheet.title || "(無題)"; updateTitle();
   $("mode").textContent = sheet.mode === "data" ? "実データ確認" : "スキーマ確認";
   const sh = curSheet(), { R, C, VR, VC } = vdims(sh), { origin, covered } = mergeMap(sh), marks = marksFor(sh.name), fz = parseFreeze(sh);
   const topOff = [0], leftOff = [0]; let acc = HDR_H; for (let r = 1; r <= fz.fr; r++) { topOff[r] = acc; acc += rhOf(sh, r); }
   acc = RH_W; for (let c = 1; c <= fz.fc; c++) { leftOff[c] = acc; acc += cwOf(sh, c); }
   let tw = RH_W; for (let c = 1; c <= VC; c++) tw += cwOf(sh, c);
   let h = `<colgroup><col style='width:${RH_W}px'>`; for (let c = 1; c <= VC; c++) h += `<col style='width:${cwOf(sh, c)}px'>`; h += "</colgroup>";
-  h += `<tr style='height:${HDR_H}px'><th class='corner'></th>`;
+  h += `<tr style='height:${HDR_H}px'><th class='corner${marks["0,0"] ? " tri " + marks["0,0"] : ""}'></th>`;
   for (let c = 1; c <= VC; c++) { const st = c <= fz.fc ? `left:${leftOff[c]}px;z-index:4;` : ""; h += `<th data-col='${c}' class='${(c === fz.fc ? "fc-last" : "") + (c > C ? " ext" : "")}' style='${st}'>${colName(c)}<div class='rz-c' data-rzc='${c}'></div></th>`; }
   h += "</tr>";
   for (let r = 1; r <= VR; r++) {
@@ -368,8 +414,8 @@ function render() {
       if (rowFz) st.push(`position:sticky;top:${topOff[r]}px;z-index:${colFz ? 2 : 1}`);
       if (colFz) st.push(`position:sticky;left:${leftOff[c]}px;z-index:${rowFz ? 2 : 1}`);
       const rect = m || { r1: r, c1: c, r2: r, c2: c };
-      let cls = "";
-      for (let rr = rect.r1; rr <= rect.r2 && !cls; rr++) for (let cc = rect.c1; cc <= rect.c2; cc++) { const mk = marks[rr + "," + cc]; if (mk !== undefined) { cls = " mark" + (mk ? " " + mk : ""); break; } }
+      let cls = "", best = 0;
+      for (let rr = rect.r1; rr <= rect.r2; rr++) for (let cc = rect.c1; cc <= rect.c2; cc++) { const mk = marks[rr + "," + cc]; if (mk && RANK[mk] > best) { best = RANK[mk]; cls = " tri " + mk; } }
       const hl = hlRanges.some((x) => x.sheet === sh.name && x.rect.r1 <= rect.r2 && x.rect.r2 >= rect.r1 && x.rect.c1 <= rect.c2 && x.rect.c2 >= rect.c1);
       const lastR = (m ? m.r2 : r) === fz.fr, lastC = (m ? m.c2 : c) === fz.fc;
       const span = m ? ` rowspan='${m.r2 - m.r1 + 1}' colspan='${m.c2 - m.c1 + 1}'` : "";
@@ -436,14 +482,14 @@ function renameSheet(i) {
     const name = inp.value.trim();
     if (!ok || name === old) return renderTabs();
     const err = validName(name, i); if (err) { toast(err); return renderTabs(); }
-    mutate(() => { for (const it of review.items) { const ps = splitRanges(it.range); if (ps.some((p) => p.sheet === old)) it.range = joinRanges(ps.map((p) => p.sheet === old ? { ...p, sheet: name } : p)); } sheet.sheets[i].name = name; }); };
+    mutate(() => { for (const it of review.threads) { const ps = splitRanges(it.range); if (ps.some((p) => p.sheet === old)) it.range = joinRanges(ps.map((p) => p.sheet === old ? { ...p, sheet: name } : p)); } sheet.sheets[i].name = name; }); };
   inp.onkeydown = (e) => { if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); e.stopPropagation(); };
   inp.onblur = () => fin(true);
 }
 function deleteSheet(i) {
   if (sheet.sheets.length <= 1) return toast("最後のシートは削除できません");
   mutate(() => { const name = sheet.sheets[i].name;
-    for (const it of review.items) { if (it.deleted) continue; const ps = splitRanges(it.range); if (ps.length && ps.every((p) => p.sheet === name)) it.deleted = true; else if (ps.some((p) => p.sheet === name)) it.range = joinRanges(ps.filter((p) => p.sheet !== name)); }
+    for (const it of review.threads) { if (it.deleted) continue; const ps = splitRanges(it.range); if (ps.length && ps.every((p) => p.sheet === name)) it.deleted = true; else if (ps.some((p) => p.sheet === name)) it.range = joinRanges(ps.filter((p) => p.sheet !== name)); }
     sheet.sheets.splice(i, 1); if (cur >= i) cur = Math.max(0, cur - 1); rects = []; activeId = null; });
   toast("シートを削除しました（Ctrl+Z で戻せます）");
 }
@@ -537,6 +583,15 @@ function headRect(type, a, b) { const { R, C } = dims(curSheet()); const lo = Ma
   return type === "col" ? { r1: 1, c1: lo, r2: R, c2: hi } : { r1: lo, c1: 1, r2: hi, c2: C }; } // 結合は広げない（列・行そのものを選ぶ）
 function isWholeSelected(type, n) { const { R, C } = dims(curSheet()); const x = rects.length === 1 ? rects[0] : null; if (!x) return false;
   return type === "col" ? x.r1 === 1 && x.r2 === R && n >= x.c1 && n <= x.c2 : x.c1 === 1 && x.c2 === C && n >= x.r1 && n <= x.r2; }
+// セル（結合は広げず、そのセル自身）にかかっている最優先のスレッド
+function threadAt(sname, r, c) {
+  let best = null;
+  for (const it of review.threads) { if (it.deleted) continue;
+    if (!parseRanges(it.range).some((p) => p.sheet === sname && r >= p.rect.r1 && r <= p.rect.r2 && c >= p.rect.c1 && c <= p.rect.c2)) continue;
+    if (!best || RANK[kcls(it)] > RANK[kcls(best)]) best = it; }
+  return best;
+}
+const starThread = (sname) => review.threads.find((it) => !it.deleted && splitRanges(it.range).some((p) => p.star && partOnSheet(p, sname)));
 $("grid").addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   const sh = curSheet();
@@ -544,6 +599,7 @@ $("grid").addEventListener("mousedown", (e) => {
   if (rc) { const c = +rc.dataset.rzc; drag = { kind: "rzc", n: c, x0: e.clientX, w0: cwOf(sh, c) }; e.preventDefault(); return; }
   if (rr) { const r = +rr.dataset.rzr; drag = { kind: "rzr", n: r, y0: e.clientY, h0: rhOf(sh, r) }; e.preventDefault(); return; }
   const th = e.target.closest("th");
+  if (th && th.classList.contains("corner")) { const t = starThread(sh.name); if (t) { activeId = t.id; renderList(); renderBubbles(); } e.preventDefault(); return; }
   if (th && (th.dataset.col || th.dataset.row)) {
     const type = th.dataset.col ? "col" : "row", n = +(th.dataset.col || th.dataset.row);
     if (isWholeSelected(type, n) && !e.shiftKey && !e.ctrlKey && !e.metaKey) { const x = rects[0]; drag = { kind: "reorder", type, a: type === "col" ? x.c1 : x.r1, b: type === "col" ? x.c2 : x.r2, x0: e.clientX, y0: e.clientY, on: false, t: null }; e.preventDefault(); return; }
@@ -555,7 +611,7 @@ $("grid").addEventListener("mousedown", (e) => {
   const r = +td.dataset.r, c = +td.dataset.c, here = expandMerges(sh, { r1: r, c1: c, r2: r, c2: c });
   if (e.shiftKey && anchor && rects.length) { rects[rects.length - 1] = expandMerges(sh, { r1: Math.min(anchor.r, r), c1: Math.min(anchor.c, c), r2: Math.max(anchor.r, r), c2: Math.max(anchor.c, c) }); }
   else { anchor = { r, c }; if (e.ctrlKey || e.metaKey) rects.push(here); else rects = [here]; dragging = true; }
-  const hit = review.items.find((it) => !it.deleted && parseRanges(it.range).some((p) => p.sheet === sh.name && r >= p.rect.r1 && r <= p.rect.r2 && c >= p.rect.c1 && c <= p.rect.c2));
+  const hit = threadAt(sh.name, r, c);
   const nid = hit ? hit.id : null; if (nid !== activeId) { activeId = nid; renderList(); renderBubbles(); }
   refreshSel(); e.preventDefault();
 });
@@ -657,70 +713,92 @@ window.addEventListener("keydown", (e) => {
   if (!mod && !e.altKey && e.key.length === 1) { e.preventDefault(); startEdit(x.r1, x.c1, e.key); }
 });
 
-// ---- コメント（指示）: 一覧と吹き出し ----
-const nextId = () => "r" + (Math.max(0, ...review.items.map((i) => +String(i.id).replace(/\D/g, "") || 0)) + 1);
-const itemById = (id) => review.items.find((i) => i.id === id);
+// ---- コメント（スレッド）: 一覧と吹き出し ----
+const KC = { "k-wait": "#ef4444", "k-todo": "#f59e0b", "k-ask": "#8b5cf6", "k-memo": "#667085", "k-done": "#22a06b" };
+const drafts = {}; // スレッド id -> 返信の下書き
+const nowIso = () => new Date().toISOString();
+const fmtAt = (t) => { const d = new Date(t); return isNaN(d) ? "" : (d.getMonth() + 1) + "/" + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+const whoOf = (m) => m.author === "human" ? (m.name || "人") : (m.name || "エージェント");
+const nextId = () => "new-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const itemById = (id) => review.threads.find((i) => i.id === id);
 function activate(id, jump) {
   activeId = id; composer = null; const it = itemById(id); if (!it) return render();
-  if (jump && !it.deleted) { hlRanges = parseRanges(it.range); const f = hlRanges[0]; if (f) { const i = sheet.sheets.findIndex((s) => s.name === f.sheet); if (i >= 0) cur = i; } }
+  if (jump && !it.deleted) { hlRanges = parseRanges(it.range); const f = splitRanges(it.range).find((p) => p.star || p.rect); if (f && f.sheet !== null) { const i = sheet.sheets.findIndex((s) => s.name === f.sheet); if (i >= 0) cur = i; } }
   render(); if (jump) { const el = document.querySelector("#grid td.hl"); if (el) el.scrollIntoView({ block: "center", inline: "center" }); layoutBubbles(); setTimeout(() => { hlRanges = []; render(); }, 1600); }
+}
+// 人の操作（返信・解決・追加・削除）はその場でサーバへ保存する（スレッドは項目単位でマージされる）
+function act(fn) { mutate(fn); commitReview(); }
+function threadEl(it, withReply) { // メッセージ・返信欄・ボタン。吹き出しと一覧の展開で共用
+  const d = document.createElement("div");
+  const msgs = (it.messages || []).map((m) => `<div class="msg ${m.author}"><span class="who">${esc(whoOf(m))} ${esc(fmtAt(m.at))}</span>${esc(m.text)}</div>`).join("");
+  const done = it.status === "解決";
+  d.innerHTML = `<div class="msgs">${msgs}</div>` + (withReply ? `<textarea placeholder="返信（Ctrl+Enter で送信）"></textarea><div class="row"><button class="b p" data-rp>返信</button><button class="b" data-rs>${done ? "再開" : "解決"}</button><button class="b" data-dl>削除</button></div>` : "");
+  if (!withReply) return d;
+  const ta = d.querySelector("textarea"); ta.value = drafts[it.id] || ""; ta.oninput = () => { drafts[it.id] = ta.value; };
+  const send = () => { const t = ta.value.trim(); if (!t) return toast("返信を入力してください"); delete drafts[it.id]; act(() => { it.messages.push({ author: "human", text: t, at: nowIso() }); it.status = "未対応"; }); };
+  ta.onkeydown = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); } e.stopPropagation(); };
+  d.querySelector("[data-rp]").onclick = send;
+  d.querySelector("[data-rs]").onclick = () => act(() => { it.status = done ? "未対応" : "解決"; });
+  d.querySelector("[data-dl]").onclick = () => { if (confirm("このスレッドを削除しますか")) act(() => { review.threads.splice(review.threads.indexOf(it), 1); if (activeId === it.id) activeId = null; }); };
+  return d;
 }
 function renderList() {
   const f = $("filter").value, box = $("list"); box.innerHTML = "";
-  review.items.forEach((it, idx) => {
-    if (f && it.status !== f) return;
-    const d = document.createElement("div"); d.className = "item" + (it.id === activeId ? " on" : "") + (it.deleted ? " gone" : ""); d.dataset.id = it.id;
-    d.innerHTML = `<div><span class="r">${esc(it.range)}</span><span class="st ${it.status}">${it.status}</span>${it.deleted ? '<span class="st 削除">対象が削除された</span>' : ""}</div><div class="i">${esc(it.instruction)}</div>` +
-      (it.agent_reply ? `<div class="a">${esc(it.agent_reply)}</div>` : "") +
-      `<div class="row"><select data-s="${idx}" style="width:auto"><option>未対応</option><option>対応済</option><option>質問</option></select><button class="b" data-e="${idx}">編集</button><button class="b" data-d="${idx}">削除</button></div>`;
-    d.querySelector("select").value = it.status;
-    d.onclick = (e) => { if (e.target.closest(".row")) return; activate(it.id, true); };
-    d.querySelector("select").onchange = (e) => mutate(() => { it.status = e.target.value; });
-    d.querySelector("[data-d]").onclick = () => { if (confirm("この指示を削除しますか")) mutate(() => { review.items.splice(idx, 1); if (activeId === it.id) activeId = null; }); };
-    d.querySelector("[data-e]").onclick = () => { const t = prompt("指示を編集", it.instruction); if (t !== null) mutate(() => { it.instruction = t; }); };
+  const list = review.threads.filter((it) => !f || (f.startsWith("kind:") ? it.kind === f.slice(5) : f === "open" ? it.status !== "解決" && !it.deleted : it.status === f));
+  list.sort((a, b) => (RANK[kcls(b)] - RANK[kcls(a)]));
+  for (const it of list) {
+    const cls = kcls(it), on = it.id === activeId, last = (it.messages || [])[(it.messages || []).length - 1];
+    const d = document.createElement("div"); d.className = "item " + cls + (on ? " on" : "") + (it.deleted ? " gone" : ""); d.dataset.id = it.id;
+    d.innerHTML = `<div><span class="kd">${esc(it.kind)}</span> <span class="r">${esc(it.range)}</span><span class="st ${it.status}">${it.status}</span>${it.deleted ? '<span class="st 削除">対象が削除された</span>' : ""}</div>`;
+    if (on) d.appendChild(threadEl(it, true));
+    else if (last) { const p = document.createElement("div"); p.className = "msg " + last.author; p.innerHTML = `<span class="who">${esc(whoOf(last))} · ${(it.messages || []).length} 件</span>${esc(last.text.length > 80 ? last.text.slice(0, 80) + "…" : last.text)}`; d.appendChild(p); }
+    d.onclick = (e) => { if (e.target.closest("textarea,button")) return; if (!on) activate(it.id, true); };
     box.appendChild(d);
-  });
-  if (!box.children.length) box.innerHTML = '<div class="item hint">指示はまだありません</div>';
+  }
+  if (!box.children.length) box.innerHTML = '<div class="item hint">該当するスレッドはありません</div>';
 }
 $("filter").onchange = renderList;
-function addItem(range, instruction) {
+function addItem(range, text, kind) {
   if (!range) return toast("範囲を選択してください");
-  if (!instruction) return toast("指示を入力してください");
-  let id; mutate(() => { id = nextId(); review.items.push({ id, range, instruction, status: "未対応", agent_reply: "" }); });
-  composer = null; activeId = id; render(); toast("追加しました（保存で確定）"); return true;
+  if (!text) return toast("内容を入力してください");
+  kind = kind || "指示"; let id;
+  act(() => { id = nextId(); review.threads.push({ id, range, kind, status: "未対応", messages: [{ author: "human", text, at: nowIso() }] }); });
+  composer = null; activeId = id; render(); toast("追加しました"); return true;
 }
-$("add").onclick = () => { if (addItem($("range").value.trim(), $("instr").value.trim())) { $("instr").value = ""; } };
-function openComposer() { if (!rects.length) return toast("先にセルを選んでください"); composer = { range: selText(), text: composer ? composer.text : "", focus: true }; activeId = null; renderBubbles(); }
+$("add").onclick = () => { if (addItem($("range").value.trim(), $("instr").value.trim(), $("kind").value)) { $("instr").value = ""; } };
+function openComposer() { if (!rects.length) return toast("先にセルを選んでください"); composer = { range: selText(), text: composer ? composer.text : "", kind: composer ? composer.kind : "指示", focus: true }; activeId = null; renderBubbles(); }
 
 function bubbleList() { // 表示する吹き出し
   const out = [];
   if (composer) out.push({ kind: "new" });
-  const showAll = $("showAll").checked;
-  for (const it of review.items) { if (it.deleted) continue; if (it.id === activeId || showAll) { const f = parseRanges(it.range).find((p) => p.sheet === curSheet().name); if (f) out.push({ kind: "item", it, rect: f.rect }); } }
+  const showAll = $("showAll").checked, sn = curSheet().name;
+  for (const it of review.threads) { if (it.deleted) continue; if (it.id === activeId || showAll) { const f = splitRanges(it.range).find((p) => partOnSheet(p, sn) && (p.star || p.rect)); if (f) out.push({ kind: "item", it, rect: anchorRect(f) }); } }
   return out;
 }
 let bubbles = [];
 function renderBubbles() {
   const ov = $("ov"); ov.querySelectorAll(".bubble").forEach((b) => b.remove()); $("lines").innerHTML = ""; bubbles = [];
   for (const b of bubbleList()) {
-    const d = document.createElement("div");
+    const d = document.createElement("div"); let color = "#2f6feb";
     if (b.kind === "new") {
-      d.className = "bubble new active"; d.innerHTML = `<button class="x" title="閉じる">×</button><div class="hint">${esc(composer.range)}</div><textarea placeholder="この範囲をどうしたいか（Ctrl+Enter で追加）"></textarea><div class="row"><button class="b p" data-ok>追加</button><button class="b" data-no>キャンセル</button></div>`;
+      d.className = "bubble new active"; d.innerHTML = `<button class="x" title="閉じる">×</button><div class="hint">${esc(composer.range)} <select data-k style="width:auto"><option>指示</option><option>確認</option><option>メモ</option></select></div><textarea placeholder="この範囲について（Ctrl+Enter で追加）"></textarea><div class="row"><button class="b p" data-ok>追加</button><button class="b" data-no>キャンセル</button></div>`;
       const ta = d.querySelector("textarea"); ta.value = composer.text; ta.oninput = () => { composer.text = ta.value; };
+      const ks = d.querySelector("[data-k]"); ks.value = composer.kind; ks.onchange = () => { composer.kind = ks.value; };
       ta.onkeydown = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); d.querySelector("[data-ok]").click(); } if (e.key === "Escape") { composer = null; renderBubbles(); } e.stopPropagation(); };
-      d.querySelector("[data-ok]").onclick = () => addItem(composer.range, composer.text.trim());
+      d.querySelector("[data-ok]").onclick = () => addItem(composer.range, composer.text.trim(), composer.kind);
       d.querySelector("[data-no]").onclick = d.querySelector(".x").onclick = () => { composer = null; renderBubbles(); };
-      b.rect = (parseRanges(composer.range)[0] || {}).rect; b.focus = composer.focus; composer.focus = false;
+      const p0 = splitRanges(composer.range).find((p) => p.star || p.rect); b.rect = p0 ? anchorRect(p0) : null; b.focus = composer.focus; composer.focus = false;
       if (!b.rect) continue;
     } else {
-      const it = b.it, cls = it.status === "対応済" ? "done" : it.status === "質問" ? "q" : "";
+      const it = b.it, cls = kcls(it); color = KC[cls];
       d.className = "bubble " + cls + (it.id === activeId ? " active" : ""); d.dataset.id = it.id;
-      d.innerHTML = `<button class="x" title="閉じる">×</button><div><span class="st ${it.status}" style="margin-left:0">${it.status}</span> <span class="hint">${esc(it.range)}</span></div><div class="t">${esc(it.instruction)}</div>` + (it.agent_reply ? `<div class="a">${esc(it.agent_reply)}</div>` : "");
-      d.onclick = (e) => { if (e.target.closest(".x")) return; if (activeId !== it.id) { activeId = it.id; renderList(); renderBubbles(); } const li = document.querySelector(`#list .item[data-id='${it.id}']`); if (li) li.scrollIntoView({ block: "nearest" }); };
+      d.innerHTML = `<button class="x" title="閉じる">×</button><div><span class="kd">${esc(it.kind)}</span> <span class="st ${it.status}" style="margin-left:0">${it.status}</span> <span class="hint">${esc(it.range)}</span></div>`;
+      d.appendChild(threadEl(it, it.id === activeId));
+      d.onclick = (e) => { if (e.target.closest(".x,textarea,button")) return; if (activeId !== it.id) { activeId = it.id; renderList(); renderBubbles(); } const li = document.querySelector(`#list .item[data-id='${it.id}']`); if (li) li.scrollIntoView({ block: "nearest" }); };
       d.querySelector(".x").onclick = (e) => { e.stopPropagation(); if (activeId === it.id) activeId = null; renderList(); renderBubbles(); };
     }
     ov.appendChild(d); b.el = d;
-    const ln = document.createElementNS("http://www.w3.org/2000/svg", "path"); ln.setAttribute("fill", "none"); ln.setAttribute("stroke", "#f59e0b"); ln.setAttribute("stroke-width", "1.5"); $("lines").appendChild(ln); b.ln = ln;
+    const ln = document.createElementNS("http://www.w3.org/2000/svg", "path"); ln.setAttribute("fill", "none"); ln.setAttribute("stroke", color); ln.setAttribute("stroke-width", "1.5"); $("lines").appendChild(ln); b.ln = ln;
     bubbles.push(b);
   }
   layoutBubbles(); const nb = bubbles.find((b) => b.focus); if (nb) nb.el.querySelector("textarea").focus();
@@ -749,39 +827,88 @@ $("gridwrap").addEventListener("scroll", layoutBubbles); window.addEventListener
 $("showAll").onchange = renderBubbles;
 
 // ---- 保存 / 競合 / コピー / 再読み込み ----
-function persist() { tryLS(() => localStorage.setItem(lsKey(curKey), JSON.stringify({ sheet, review, dirty, base }))); }
+const stripRev = (s) => { const { rev: _r, ...o } = s || {}; return o; };
+function persist() { if (!curKey) return; tryLS(() => localStorage.setItem(lsKey(curKey), JSON.stringify({ sheet, review, dirty, base, rev }))); }
 const fq = () => "?f=" + encodeURIComponent(curKey);
 function setConn() { $("conn").textContent = serverOk ? "サーバ接続中" : "サーバなし（コピペ運用）"; $("conn").className = "badge " + (serverOk ? "ok" : "ng"); }
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2200); }
-const reviewJson = () => JSON.stringify({ sheet: review.sheet || curKey, items: review.items }, null, 2);
+const reviewJson = () => JSON.stringify({ sheet: curKey, rev: rev.review, threads: review.threads }, null, 2);
 const sheetJson = () => JSON.stringify(sheet, null, 2);
 function banner(html) { const b = $("banner"); b.innerHTML = html; b.classList.toggle("on", !!html); if (!html) conflictNow = null; }
 function showConflict(which) {
   const names = which.join(" / ");
-  banner(`<span><b>エージェントが ${names} を更新しました。</b>${dirty.sheet || dirty.review ? "このまま保存すると上書きになるため、保存を止めました。" : ""}再読み込みすると画面の未保存の変更は失われます。</span><button class="b p" id="bnReload">再読み込み</button><button class="b" id="bnCopy">自分の sheet.json をコピー</button><button class="b" id="bnClose">閉じる</button>`);
+  banner(`<span><b>エージェントが ${names} を更新しました。</b>${dirty.sheet ? "このまま保存すると上書きになるため、保存を止めました。" : ""}再読み込みすると画面の未保存の変更は失われます。</span><button class="b p" id="bnReload">再読み込み</button><button class="b" id="bnCopy">自分の sheet.json をコピー</button><button class="b" id="bnClose">閉じる</button>`);
   conflictNow = which; renderFTabs(); $("bnReload").onclick = reloadAll; $("bnCopy").onclick = () => copyText(sheetJson(), "sheet.json をコピーしました"); $("bnClose").onclick = () => banner("");
 }
 async function post(url, body) {
   const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({ ok: false, error: "bad response" })); return { status: r.status, j };
 }
+// スレッドの差分（保存済み → 画面）を操作リストにする。サーバが項目単位でマージするので、エージェントの同時書き込みと衝突しない
+function buildOps() {
+  let old = []; try { old = JSON.parse(saved.review) || []; } catch { old = []; }
+  const byId = new Map(old.map((t) => [t.id, t])), ops = [], later = [];
+  for (const t of review.threads) {
+    const o = byId.get(t.id); byId.delete(t.id);
+    const ms = t.messages || [];
+    if (!o) {
+      ops.push({ op: "add", tmp: t.id, range: t.range, text: (ms[0] && ms[0].text) || "（本文なし）", kind: t.kind, status: t.status, author: "human" });
+      ms.slice(1).forEach((m, i, a) => later.push({ op: "reply", id: t.id, text: m.text, author: m.author || "human", status: i === a.length - 1 ? t.status : undefined }));
+      continue;
+    }
+    const n = ms.slice(o.messages.length);
+    if (n.length) n.forEach((m, i) => ops.push({ op: "reply", id: t.id, text: m.text, author: m.author || "human", status: i === n.length - 1 ? t.status : undefined }));
+    else if (t.status !== o.status) ops.push({ op: "status", id: t.id, status: t.status });
+    if (t.range !== o.range || !!t.deleted !== !!o.deleted) ops.push({ op: "setRange", id: t.id, range: t.range, deleted: !!t.deleted });
+  }
+  for (const id of byId.keys()) ops.push({ op: "delete", id });
+  return { ops, later };
+}
+function rebaseSnaps(threads) { // 取り消し履歴の中のスレッドを最新に揃える（サーバ側の返信を取り消しで巻き戻さない）
+  const f = (a) => a.map((s) => { const o = JSON.parse(s); o.threads = threads; return JSON.stringify(o); });
+  undoStack = f(undoStack); redoStack = f(redoStack);
+}
+async function commitReview() {
+  if (!curKey || !dirty.review) return;
+  if (!serverOk || busy) return persist();
+  busy = true;
+  try {
+    const { ops, later } = buildOps(); let j = null; const idMap = {};
+    if (ops.length) { const r = await post("/api/review/patch" + fq(), { ops }); if (!r.j.ok) throw new Error(r.j.error || "failed"); j = r.j;
+      ops.forEach((o, i) => { if (o.op === "add" && j.results[i]) idMap[o.tmp] = j.results[i].id; }); }
+    if (later.length) { const r = await post("/api/review/patch" + fq(), { ops: later.map((o) => ({ ...o, id: idMap[o.id] || o.id })) }); if (!r.j.ok) throw new Error(r.j.error || "failed"); j = r.j; }
+    if (j) {
+      review.threads = j.review.threads; rev.review = j.rev; base.review = j.version;
+      if (activeId && idMap[activeId]) activeId = idMap[activeId];
+      rebaseSnaps(review.threads);
+    }
+    saved.review = JSON.stringify(review.threads); dirty.review = false; serverOk = true; setConn();
+  } catch (e) {
+    serverOk = false; setConn(); $("savemsg").textContent = "サーバに保存できませんでした。ブラウザに退避済み。「指示をコピー」で JSON を出せます。";
+  }
+  busy = false; persist(); render(); refreshListSoon();
+}
 async function saveAll() {
+  if (!curKey) return;
   endEdit(true); persist();
   if (!dirty.sheet && !dirty.review) return toast("変更はありません");
-  const msgs = [], conflicts = []; busy = true;
+  const msgs = []; let conflict = false; busy = true;
   try {
-    if (dirty.sheet) { const { status, j } = await post("/api/sheet" + fq(), { sheet, base: base.sheet });
-      if (status === 409) conflicts.push("sheet.json"); else if (!j.ok) throw new Error(j.error); else { base.sheet = j.version; saved.sheet = JSON.stringify(sheet); dirty.sheet = false; msgs.push(`sheet.json 保存（${j.count} シート）`); } }
-    if (dirty.review) { const { status, j } = await post("/api/review" + fq(), { items: review.items, base: base.review });
-      if (status === 409) conflicts.push("review.json"); else if (!j.ok) throw new Error(j.error); else { base.review = j.version; saved.review = JSON.stringify(review); dirty.review = false; msgs.push(`review.json 保存（${j.count} 件）`); } }
+    if (dirty.sheet) {
+      const { status, j } = await post("/api/sheet" + fq(), { sheet, base_rev: rev.sheet, base: base.sheet });
+      if (status === 409) conflict = true; else if (!j.ok) throw new Error(j.error);
+      else { rev.sheet = j.rev; base.sheet = j.version; saved.sheet = JSON.stringify(sheet); dirty.sheet = false; msgs.push(`sheet.json 保存（${j.count} シート）`); }
+    }
     serverOk = true; setConn();
   } catch (e) {
     busy = false; serverOk = false; setConn(); persist(); updateUi();
     $("savemsg").textContent = "サーバに保存できませんでした。ブラウザに退避済み。「sheet.json をコピー」「指示をコピー」で JSON を出せます。"; return toast("サーバに保存できません（ブラウザに退避しました）");
   }
-  busy = false; persist(); updateUi();
-  if (conflicts.length) { showConflict(conflicts); msgs.push(`${conflicts.join(" / ")} は競合のため未保存`); } else banner("");
-  $("savemsg").textContent = msgs.join(" / "); toast(conflicts.length ? "競合: 保存を止めました" : "保存しました");
+  busy = false;
+  if (dirty.review) { await commitReview(); if (!dirty.review) msgs.push("スレッド保存"); }
+  persist(); updateUi();
+  if (conflict) { showConflict(["sheet.json"]); msgs.push("sheet.json は競合のため未保存"); } else banner("");
+  $("savemsg").textContent = msgs.join(" / "); toast(conflict ? "競合: シートの保存を止めました" : "保存しました");
 }
 $("save").onclick = saveAll;
 async function copyText(txt, msg) {
@@ -790,79 +917,147 @@ async function copyText(txt, msg) {
 }
 $("copy").onclick = () => copyText(reviewJson(), "指示の JSON をコピーしました");
 $("copySheet").onclick = () => copyText(sheetJson(), "sheet.json をコピーしました");
+const getFile = async (key) => (await fetch("/api/file?f=" + encodeURIComponent(key), { cache: "no-store" })).json();
+// サーバの内容を取り込む（parts: {sheet, review}）。表示中のファイルならグローバルにも反映する
+function refreshFrom(key, f, parts) {
+  if (key === curKey) stash();
+  const st = FILES.get(key); if (!st) return;
+  const fr = f.rev || { sheet: 0, review: 0 }, fv = f.ver || {};
+  if (parts.review) {
+    st.review = { threads: f.review.threads }; st.rev.review = fr.review; st.base.review = fv.review; st.saved.review = JSON.stringify(st.review.threads); st.dirty.review = false;
+    const g = (a) => a.map((s) => { const o = JSON.parse(s); o.threads = st.review.threads; return JSON.stringify(o); }); st.undoStack = g(st.undoStack); st.redoStack = g(st.redoStack);
+  }
+  if (parts.sheet) {
+    st.sheet = stripRev(f.sheet); st.rev.sheet = fr.sheet; st.base.sheet = fv.sheet; st.saved.sheet = JSON.stringify(st.sheet); st.dirty.sheet = false;
+    st.undoStack = []; st.redoStack = []; st.rects = []; st.anchor = null; st.composer = null; st.conflict = null; st.notified = null; if (st.cur >= st.sheet.sheets.length) st.cur = 0;
+    if (f.task !== undefined) st.task = f.task;
+  }
+  if (key === curKey) { bind(st); if (parts.sheet) banner(""); persist(); render(); }
+}
 async function reloadAll() {
-  try {
-    const rs = await fetch("/api/sheet" + fq(), { cache: "no-store" }), rr = await fetch("/api/review" + fq(), { cache: "no-store" });
-    sheet = await rs.json(); review = await rr.json(); base = { sheet: rs.headers.get("x-version"), review: rr.headers.get("x-version") };
-    saved = { sheet: JSON.stringify(sheet), review: JSON.stringify(review) }; dirty = { sheet: false, review: false }; undoStack = []; redoStack = []; rects = []; anchor = null; activeId = null; composer = null; banner("");
-    serverOk = true; setConn(); persist(); render(); toast("読み直しました");
-  } catch { serverOk = false; setConn(); toast("サーバに接続できません"); }
+  try { const f = await getFile(curKey); refreshFrom(curKey, f, { sheet: true, review: true }); banner(""); serverOk = true; setConn(); toast("読み直しました"); }
+  catch { serverOk = false; setConn(); toast("サーバに接続できません"); }
 }
 $("reload").onclick = reloadAll;
-// エージェントの更新を検知（サーバ接続時のみ）
+
+// ---- エージェントの更新を検知（サーバ接続時のみ）/ heartbeat ----
+const clientId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+const dirtyKeys = () => [...FILES.keys()].filter((k) => fdirty(k));
+function hbBody() { return { client: clientId, open: [...FILES.keys()], dirty: dirtyKeys() }; }
+let hbSig = "", hbT = 0;
+async function heartbeat(force) {
+  if (!BOOT.hub) return; const b = hbBody(), sig = JSON.stringify(b);
+  if (!force && sig === hbSig && Date.now() - hbT < 10000) return;
+  hbSig = sig; hbT = Date.now(); try { await post("/api/heartbeat", b); } catch { /* 次回 */ }
+}
 async function poll() {
   if (!BOOT.server || busy) return;
   try {
-    const v = await (await fetch("/api/version", { cache: "no-store" })).json(); if (!serverOk) { serverOk = true; setConn(); }
-    let added = false;
-    for (const key of Object.keys(v.files)) { // 新しい *.sheet.json が増えたらタブを足す
-      if (FILES.has(key)) continue;
-      try { const f = await (await fetch("/api/file?f=" + encodeURIComponent(key), { cache: "no-store" })).json(); FILES.set(key, newState(f)); added = true; toast("ファイルを追加: " + key); } catch { /* 壊れた JSON などは次回に回す */ }
+    const keys = [...FILES.keys()];
+    if (keys.length) {
+      const v = await (await fetch("/api/version?" + keys.map((k) => "f=" + encodeURIComponent(k)).join("&"), { cache: "no-store" })).json(); if (!serverOk) { serverOk = true; setConn(); }
+      let redraw = false;
+      for (const [key, ver] of Object.entries(v.files || {})) {
+        const st = FILES.get(key); if (!st) continue;
+        const b = key === curKey ? base : st.base, r = key === curKey ? rev : st.rev, d = key === curKey ? dirty : st.dirty;
+        const revV = ver.rev || {};
+        const chS = ver.sheet !== b.sheet || (revV.sheet !== undefined && revV.sheet !== r.sheet), chR = ver.review !== b.review || (revV.review !== undefined && revV.review !== r.review);
+        if (!chS && !chR) continue;
+        const parts = { sheet: chS && !d.sheet, review: chR && !d.review };
+        if (chS && d.sheet) { const sig = ver.sheet + ":" + revV.sheet; if (st.notified !== sig) { st.notified = sig; if (key === curKey) showConflict(["sheet.json"]); else { st.conflict = ["sheet.json"]; redraw = true; } } }
+        if (parts.sheet || parts.review) { try { const f = await getFile(key); refreshFrom(key, f, parts); redraw = true; if (parts.sheet) toast("エージェントが更新: " + key.split(/[\\/]/).pop()); } catch { /* 壊れた JSON などは次回 */ } }
+      }
+      if (redraw) renderFTabs();
     }
-    for (const [key, ver] of Object.entries(v.files)) {
-      const st = FILES.get(key); if (!st) continue; const b = key === curKey ? base : st.base;
-      const ch = []; if (ver.sheet !== b.sheet) ch.push("sheet.json"); if (ver.review !== b.review) ch.push("review.json");
-      if (!ch.length) continue;
-      if (key === curKey) showConflict(ch); else { st.conflict = ch; added = true; }
-    }
-    if (added) renderFTabs();
+    if (listMode) refreshList();
+    heartbeat(false);
   } catch { if (serverOk) { serverOk = false; setConn(); } }
 }
 setInterval(poll, 3000);
-const anyDirty = () => [...FILES.entries()].some(([k, st]) => (k === curKey ? dirty : st.dirty).sheet || (k === curKey ? dirty : st.dirty).review);
+const anyDirty = () => [...FILES.keys()].some((k) => fdirty(k));
 window.addEventListener("beforeunload", (e) => { if (anyDirty()) { persist(); stash(); if (serverOk) { e.preventDefault(); e.returnValue = ""; } } });
+window.addEventListener("pagehide", () => { try { if (BOOT.hub) navigator.sendBeacon("/api/heartbeat", new Blob([JSON.stringify({ client: clientId, open: [], dirty: [] })], { type: "application/json" })); } catch { /* 無視 */ } });
+
+// ---- タブ名・ファビコン・確認待ちバッジ ----
+const hueOf = (s) => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h % 360; };
+function setFavicon(task) {
+  const col = task ? `hsl(${hueOf(task)} 65% 45%)` : "#6b7280";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="${col}"/><path d="M7 10h18M7 16h18M7 22h18M13 8v16M19 8v16" stroke="#fff" stroke-width="2" fill="none"/></svg>`;
+  let l = document.querySelector('link[rel="icon"]'); if (!l) { l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); }
+  const href = "data:image/svg+xml," + encodeURIComponent(svg); if (l.getAttribute("href") !== href) l.setAttribute("href", href);
+}
+const threadsOf = (k) => (k === curKey ? review : FILES.get(k).review).threads;
+const totalWait = () => [...FILES.keys()].reduce((n, k) => n + threadsOf(k).filter(isWait).length, 0);
+const baseName = (k) => String(k).split(/[\\/]/).pop();
+function updateTitle() {
+  const n = totalWait(), pre = (anyDirty() ? "● " : "") + (n ? `(${n}) ` : "");
+  if (listMode || !curKey) { document.title = pre + "sheet-preview 一覧"; setFavicon(""); }
+  else { const st = FILES.get(curKey), task = (st && st.task) || BOOT.task || ""; document.title = pre + (task ? `[${task}] ` : "") + baseName(curKey) + " - sheet-preview"; setFavicon(task); }
+  const wb = $("waitBadge"); if (wb) { const w = curKey && !listMode && review ? waitCount() : 0; wb.style.display = w ? "" : "none"; wb.textContent = "確認待ち " + w; }
+}
+$("waitBadge").onclick = () => { setPane(true, null); $("filter").value = "確認待ち"; renderList(); };
 
 // ---- ファイルタブ（最上部） ----
 function newState(f) {
-  const st = { key: f.key, sheet: f.sheet, review: f.review, base: { sheet: f.ver && f.ver.sheet, review: f.ver && f.ver.review },
-    dirty: { sheet: false, review: false }, saved: { sheet: JSON.stringify(f.sheet), review: JSON.stringify(f.review) },
+  const fr = f.rev || { sheet: 0, review: 0 }, fv = f.ver || {};
+  const st = { key: f.key, task: f.task || "", title: f.title || "", sheet: stripRev(f.sheet), review: { threads: (f.review && f.review.threads) || [] },
+    base: { sheet: fv.sheet, review: fv.review }, rev: { sheet: fr.sheet, review: fr.review },
+    dirty: { sheet: false, review: false }, saved: { sheet: JSON.stringify(stripRev(f.sheet)), review: JSON.stringify((f.review && f.review.threads) || []) },
     undoStack: [], redoStack: [], cur: 0, rects: [], anchor: null, activeId: null, composer: null, conflict: null };
   // 下書き（localStorage）の復元。読み込んだ版が同じときだけ戻す（エージェントの更新を握りつぶさない）
   const d = tryLS(() => JSON.parse(localStorage.getItem(lsKey(f.key))));
-  if (d && d.sheet && d.review && d.dirty && (d.dirty.sheet || d.dirty.review) && d.base && d.base.sheet === st.base.sheet && d.base.review === st.base.review) {
-    st.sheet = d.sheet; st.review = d.review; st.dirty = d.dirty; st.restored = true;
+  if (d && d.sheet && d.review && Array.isArray(d.review.threads) && d.dirty && (d.dirty.sheet || d.dirty.review) && d.base && d.base.sheet === st.base.sheet && d.base.review === st.base.review) {
+    st.sheet = stripRev(d.sheet); st.review = { threads: d.review.threads }; st.dirty = d.dirty; st.restored = true;
   }
   return st;
 }
-const FIELDS = ["sheet", "review", "base", "dirty", "saved", "undoStack", "redoStack", "cur", "rects", "anchor", "activeId", "composer"];
 function stash() { // 表示中の状態をエントリへ退避
   const st = FILES.get(curKey); if (!st) return;
-  st.sheet = sheet; st.review = review; st.base = base; st.dirty = dirty; st.saved = saved; st.undoStack = undoStack; st.redoStack = redoStack;
+  st.sheet = sheet; st.review = review; st.base = base; st.rev = rev; st.dirty = dirty; st.saved = saved; st.undoStack = undoStack; st.redoStack = redoStack;
   st.cur = cur; st.rects = rects; st.anchor = anchor; st.activeId = activeId; st.composer = composer; st.conflict = conflictNow;
 }
+function bind(st) {
+  sheet = st.sheet; review = st.review; base = st.base; rev = st.rev; dirty = st.dirty; saved = st.saved; undoStack = st.undoStack; redoStack = st.redoStack;
+  cur = st.cur; rects = st.rects; anchor = st.anchor; activeId = st.activeId; composer = st.composer;
+}
 function loadState(key) { // エントリをグローバルへ
-  const st = FILES.get(key); curKey = key;
-  sheet = st.sheet; review = st.review; base = st.base; dirty = st.dirty; saved = st.saved; undoStack = st.undoStack; redoStack = st.redoStack;
-  cur = st.cur; rects = st.rects; anchor = st.anchor; activeId = st.activeId; composer = st.composer; hlRanges = [];
+  const st = FILES.get(key); curKey = key; bind(st); hlRanges = [];
   hideMenu(); hidePal(); $("range").value = ""; $("instr").value = "";
   if (st.conflict) showConflict(st.conflict); else banner("");
   $("savemsg").textContent = "";
 }
 function adopt(key) {
-  if (key === curKey) return; if (busy) return toast("保存中です");
-  endEdit(true); persist(); stash(); loadState(key); persist(); render();
+  if (key === curKey && !listMode) return; if (busy) return toast("保存中です");
+  if (!listMode) { endEdit(true); persist(); stash(); }
+  listMode = false; document.body.classList.remove("listmode");
+  loadState(key); persist(); render(); setTimeout(layoutBubbles, 0); heartbeat(false);
 }
 const fdirty = (key) => { const d = key === curKey ? dirty : FILES.get(key).dirty; return d.sheet || d.review; };
+function closeTab(key) {
+  if (fdirty(key) && !confirm("未保存の変更があります。閉じると破棄されます（下書きはブラウザに残ります）。閉じますか？")) return;
+  const wasCur = key === curKey, keys = [...FILES.keys()], i = keys.indexOf(key);
+  if (wasCur) { endEdit(false); persist(); }
+  FILES.delete(key);
+  if (wasCur) { curKey = null; const next = keys[i + 1] || keys[i - 1]; if (next && next !== key) { listMode = true; adopt(next); } else showList(true); }
+  renderFTabs(); heartbeat(true);
+}
 function renderFTabs() {
   const t = $("ftabs"); if (!t) return; t.innerHTML = "";
+  if (BOOT.hub) { const h = document.createElement("button"); h.className = "ft home" + (listMode ? " on" : ""); h.textContent = "一覧"; h.title = "登録されているファイルの一覧"; h.onclick = () => showList(); t.appendChild(h); }
+  const names = [...FILES.keys()].map(baseName);
   for (const key of FILES.keys()) {
-    const b = document.createElement("button"); b.className = "ft" + (key === curKey ? " on" : ""); b.dataset.key = key; b.title = key;
-    b.appendChild(document.createTextNode(key));
+    const st = FILES.get(key), nm = baseName(key), dup = names.filter((x) => x === nm).length > 1;
+    const b = document.createElement("button"); b.className = "ft" + (!listMode && key === curKey ? " on" : ""); b.dataset.key = key; b.title = key;
+    b.appendChild(document.createTextNode((dup && st.task ? `[${st.task}] ` : "") + nm));
+    const w = threadsOf(key).filter(isWait).length;
+    if (w) { const s = document.createElement("span"); s.className = "dot w"; s.textContent = `(${w})`; s.title = "確認待ち " + w + " 件"; b.appendChild(s); }
     if (fdirty(key)) { const s = document.createElement("span"); s.className = "dot"; s.textContent = "●"; s.title = "未保存"; b.appendChild(s); }
-    if (key === curKey ? conflictNow : FILES.get(key).conflict) { const s = document.createElement("span"); s.className = "dot"; s.textContent = "⚠"; s.title = "ファイルが外部で更新されています"; b.appendChild(s); }
+    if (key === curKey ? conflictNow : st.conflict) { const s = document.createElement("span"); s.className = "dot"; s.textContent = "⚠"; s.title = "ファイルが外部で更新されています"; b.appendChild(s); }
+    if (BOOT.hub) { const x = document.createElement("span"); x.className = "cx"; x.textContent = "×"; x.title = "タブを閉じる"; x.onclick = (e) => { e.stopPropagation(); closeTab(key); }; b.appendChild(x); }
     b.onclick = () => adopt(key); t.appendChild(b);
   }
   if (BOOT.server) { const a = document.createElement("button"); a.className = "ft"; a.id = "ftAdd"; a.textContent = "+"; a.title = "別の *.sheet.json を追加（パス入力。無ければ新規作成。フォルダも可）"; a.onclick = addFile; t.appendChild(a); }
+  updateTitle();
 }
 function addFile() {
   const a = $("ftAdd"); if (!a) return; const inp = document.createElement("input"); inp.placeholder = "追加する .sheet.json のパス（無ければ新規作成）/ フォルダ"; inp.id = "ftInput";
@@ -870,12 +1065,60 @@ function addFile() {
   const fin = async (ok) => { if (done) return; done = true; const p = inp.value.trim(); if (!ok || !p) return renderFTabs();
     try { const { j } = await post("/api/open", { path: p });
       if (!j.ok) { toast(j.error || "追加できません"); return renderFTabs(); }
-      for (const key of j.keys) if (!FILES.has(key)) { const f = await (await fetch("/api/file?f=" + encodeURIComponent(key), { cache: "no-store" })).json(); FILES.set(key, newState(f)); }
+      for (const key of j.keys) if (!FILES.has(key)) FILES.set(key, newState(await getFile(key)));
       renderFTabs(); if (j.keys.length) adopt(j.keys[0]); toast(j.created ? "新規作成: " + j.keys[0] : "追加しました");
     } catch (e) { toast("サーバに接続できません"); renderFTabs(); } };
   inp.onkeydown = (e) => { if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); e.stopPropagation(); };
   inp.onblur = () => fin(false);
 }
+
+// ---- 一覧タブ（ハブのホーム）----
+let LIST = null, listBusy = false, listT = null;
+const fmtDT = (s) => { if (!s) return ""; const d = new Date(s); if (isNaN(d)) return ""; const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear() === new Date().getFullYear() ? "" : d.getFullYear() + "/"}${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+function showList(force) {
+  if (!BOOT.hub) return; if (listMode && !force) return; if (busy) return toast("保存中です");
+  if (curKey) { endEdit(true); persist(); stash(); }
+  listMode = true; curKey = null; document.body.classList.add("listmode"); renderFTabs(); refreshList(); heartbeat(false);
+}
+const refreshListSoon = () => { if (listMode) { clearTimeout(listT); listT = setTimeout(refreshList, 200); } };
+async function refreshList() {
+  if (!BOOT.hub || listBusy) return; listBusy = true;
+  try { LIST = await (await fetch("/api/list", { cache: "no-store" })).json(); } catch { /* 前回のまま */ }
+  listBusy = false; renderListView();
+}
+async function openFromList(key) {
+  try { if (!FILES.has(key)) FILES.set(key, newState(await getFile(key))); adopt(key); } catch { toast("開けません"); }
+}
+function renderListView() {
+  if (!listMode || !LIST) return;
+  const note = $("lvNote"); const c = LIST.cleanup, parts = [];
+  if (c && c.moved && c.moved.length) parts.push(`<div class="note"><b>${c.moved.length} 件を整理（ごみ箱へ）</b> ${fmtDT(c.at)}。${LIST.retentionDays} 日更新のなかった登録ファイルを移しました: ${c.moved.map((m) => esc(String(m.path).split("/").pop())).join(", ")}。元に戻すには下の「ごみ箱」から。</div>`);
+  if (c && c.purged) parts.push(`<div class="note">ごみ箱で ${LIST.retentionDays} 日を過ぎた ${c.purged} 件を完全に削除しました。</div>`);
+  if (!LIST.cleanupEnabled) parts.push(`<div class="note">自動整理は停止中（--no-cleanup）。</div>`);
+  parts.push(`<div class="hint">${LIST.retentionDays} 日更新のない登録ファイルは、この一覧を開いたときに ${esc(LIST.trash.dir)} へ移されます。大事なものは別の場所にコピーするか、xlsx に変換してください。</div>`);
+  note.innerHTML = parts.join("");
+  const files = LIST.files, tasks = [...new Set(files.map((f) => f.task).filter(Boolean))].sort(), sel = $("lvTask");
+  if (sel.dataset.sig !== tasks.join("\n")) { const cur0 = sel.value; sel.innerHTML = `<option value="">すべてのタスク</option>` + tasks.map((t) => `<option>${esc(t)}</option>`).join(""); sel.value = tasks.includes(cur0) ? cur0 : ""; sel.dataset.sig = tasks.join("\n"); }
+  const q = $("lvQ").value.trim().toLowerCase(), tk = sel.value;
+  const rows = files.filter((f) => (!tk || f.task === tk) && (!q || [f.task, f.name, f.path, f.title].join("\n").toLowerCase().includes(q))).sort((a, b) => String(b.updated || "").localeCompare(String(a.updated || "")));
+  $("lvInfo").textContent = `${rows.length} / ${files.length} 件`;
+  let h = `<table><thead><tr><th>タスク</th><th>ファイル名</th><th>パス</th><th>作成</th><th>更新</th><th>確認待ち</th><th>状態</th></tr></thead><tbody>`;
+  for (const f of rows) {
+    const ok = f.state === "ok", left = f.expires_at ? Math.ceil((new Date(f.expires_at) - new Date(LIST.now)) / 86400000) : null;
+    const state = ok ? (left !== null && left <= 2 ? `あと ${Math.max(left, 0)} 日で整理` : "ok") : f.state === "missing" ? `見つからない <button class="b" data-rm="${esc(f.path)}">登録から外す</button>` : `読めない <button class="b" data-rm="${esc(f.path)}">登録から外す</button>`;
+    h += `<tr class="${ok ? "row-f" : "miss"}" data-key="${esc(f.key)}"><td>${esc(f.task || "")}</td><td>${esc(f.name)}</td><td title="${esc(f.path)}">${esc(f.path)}</td><td>${fmtDT(f.created)}</td><td>${fmtDT(f.updated)}</td><td class="num">${f.unanswered ? `<span class="badge wait">${f.unanswered}</span>` : ""}</td><td>${state}</td></tr>`;
+  }
+  $("lvTable").innerHTML = h + (rows.length ? "" : `<tr><td colspan="7" class="hint">該当するファイルがありません。</td></tr>`) + "</tbody></table>";
+  $("lvTable").querySelectorAll("tr.row-f").forEach((tr) => { tr.onclick = () => openFromList(tr.dataset.key); });
+  $("lvTable").querySelectorAll("[data-rm]").forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); const { j } = await post("/api/registry/remove", { path: b.dataset.rm }); toast(j.ok ? "登録から外しました" : j.error || "失敗"); refreshList(); }; });
+  const tr = LIST.trash.items;
+  let t = `<h2>ごみ箱（${esc(LIST.trash.dir)}）</h2><div class="hint">${LIST.retentionDays} 日を過ぎたものは完全に削除されます。</div>`;
+  if (!tr.length) t += `<div class="hint">空です。</div>`;
+  else { t += `<table><thead><tr><th>タスク</th><th>元のパス</th><th>整理した日時</th><th></th></tr></thead><tbody>` + tr.map((x) => `<tr><td>${esc(x.task || "")}</td><td title="${esc(x.path)}">${esc(x.path)}</td><td>${fmtDT(x.at)}</td><td><button class="b" data-rs="${esc(x.id)}">元に戻す</button></td></tr>`).join("") + "</tbody></table>"; }
+  $("lvTrash").innerHTML = t;
+  $("lvTrash").querySelectorAll("[data-rs]").forEach((b) => { b.onclick = async () => { const { j } = await post("/api/trash/restore", { id: b.dataset.rs }); toast(j.ok ? "元に戻しました: " + j.path : j.error || "失敗"); refreshList(); }; });
+}
+$("lvQ").oninput = renderListView; $("lvTask").onchange = renderListView;
 
 // ---- 一覧パネルの開閉・幅 ----
 const PANE_KEY = "sheet-preview:pane";
@@ -892,14 +1135,18 @@ $("split").addEventListener("mousedown", (e) => { e.preventDefault(); const mv =
   window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up); });
 // 画面サイズが変わったら、空きグリッドを画面いっぱいに足し直す
 let rzT = null;
-new ResizeObserver(() => { clearTimeout(rzT); rzT = setTimeout(() => { if (!editing && !drag && sheet) render(); }, 120); }).observe($("gridhost"));
+new ResizeObserver(() => { clearTimeout(rzT); rzT = setTimeout(() => { if (!editing && !drag && sheet && !listMode && curKey) render(); }, 120); }).observe($("gridhost"));
 
 // 起動時: 下書き（localStorage）の復元。読み込んだ版が同じときだけ戻す（エージェントの更新を握りつぶさない）
 (function boot() {
   for (const f of BOOT.files) FILES.set(f.key, newState(f));
-  loadState(BOOT.files[0].key);
-  if ([...FILES.values()].some((st) => st.restored)) toast("未保存の下書きを復元しました");
-  setConn(); render();
+  setConn();
+  if (BOOT.files.length) {
+    loadState(BOOT.files[0].key);
+    if ([...FILES.values()].some((st) => st.restored)) toast("未保存の下書きを復元しました");
+    render(); renderFTabs();
+  } else { listMode = true; document.body.classList.add("listmode"); renderFTabs(); }
+  if (BOOT.hub) { heartbeat(true); if (listMode || true) { LIST = { now: new Date().toISOString(), retentionDays: BOOT.retentionDays, cleanupEnabled: true, cleanup: BOOT.cleanup, trash: { dir: (BOOT.home || "") + "/trash", items: [] }, files: [] }; if (listMode) refreshList(); } }
 })();
 </script>
 </body>

@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: hub-multi-launch
+expected_outcome: |
+  ハブが起動済みなら新しいサーバを立てず、同じコマンドでファイルを登録し、出力 1 行目の URL を人に伝えている。
+  ファイルごとに別ポートでサーバを立てない。
+---
+tags: [sheet-preview]
+max_turns: 15
+timeout_seconds: 900
+allowed_tools: [Read, Glob, Grep, Skill, Write, Edit, Bash]
+---
