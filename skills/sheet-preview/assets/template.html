@@ -868,6 +868,18 @@ function persist() { if (!curKey) return; tryLS(() => localStorage.setItem(lsKey
 const fq = () => "?f=" + encodeURIComponent(curKey);
 function setConn() { $("conn").textContent = serverOk ? "サーバ接続中" : "サーバなし（コピペ運用）"; $("conn").className = "badge " + (serverOk ? "ok" : "ng"); }
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2200); }
+// 画面全体の拡大縮小（⌘- 縮小 / ⌘⇧- ・⌘= ・⌘+ 拡大 / ⌘0 既定。60〜200%、10% 刻み、localStorage に保存）。親（manager-app）からは postMessage でも受ける
+const ZOOM_KEY = "sheet-preview.zoom";
+let zoomV = Math.min(2, Math.max(0.6, Number(tryLS(() => localStorage.getItem(ZOOM_KEY))) || 1));
+function applyZoom(show) { document.documentElement.style.zoom = String(zoomV); tryLS(() => localStorage.setItem(ZOOM_KEY, String(zoomV))); if (show) toast("表示 " + Math.round(zoomV * 100) + "%"); }
+function zoomBy(step) { zoomV = step === "reset" ? 1 : Math.min(2, Math.max(0.6, Math.round((zoomV + step * 0.1) * 10) / 10)); applyZoom(true); }
+window.addEventListener("keydown", (e) => {
+  if (!e.metaKey || e.ctrlKey || e.altKey) return;
+  const step = e.code === "Minus" ? (e.shiftKey ? 1 : -1) : e.code === "Equal" ? 1 : e.code === "Digit0" ? "reset" : null;
+  if (step === null) return; e.preventDefault(); e.stopPropagation(); zoomBy(step);
+}, true);
+window.addEventListener("message", (e) => { const d = e.data; if (e.source === parent && d && d.type === "sheet-preview:zoom" && (d.step === 1 || d.step === -1 || d.step === "reset")) zoomBy(d.step); });
+if (zoomV !== 1) applyZoom(false);
 const reviewJson = () => JSON.stringify({ sheet: curKey, rev: rev.review, threads: review.threads }, null, 2);
 const sheetJson = () => JSON.stringify(sheet, null, 2);
 function banner(html) { const b = $("banner"); b.innerHTML = html; b.classList.toggle("on", !!html); if (!html) conflictNow = null; }
