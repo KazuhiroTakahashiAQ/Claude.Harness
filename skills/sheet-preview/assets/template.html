@@ -7,7 +7,8 @@
 <style>
 :root{color-scheme:light;--bg:#f6f7f9;--panel:#fff;--line:#d0d5dd;--text:#1d2430;--mute:#667085;--accent:#2563eb;--sel:rgba(37,99,235,.18);--head:#eef1f5;--warn:#fff4ce;--ext:#f5f6f8}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100vh;display:flex;flex-direction:column}
+html{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100%;display:flex;flex-direction:column}
 header{display:flex;align-items:center;gap:10px;padding:2px 10px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
 header h1{font-size:15px;margin:0}
 .badge{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--mute)}
@@ -195,6 +196,11 @@ let curKey = null, busy = false, listMode = false;
 let rev = { sheet: 0, review: 0 };
 const lsKey = (k) => "sheet-preview:v2:" + k;
 const $ = (id) => document.getElementById(id);
+// 日本語入力（IME）の変換中・確定直後のキーか。Safari/WKWebView は compositionend が keydown より先に来て isComposing が false になるため、直後 80ms も変換の一部として扱う
+let imeOn = false, imeEndAt = -1e9;
+window.addEventListener("compositionstart", () => { imeOn = true; }, true);
+window.addEventListener("compositionend", () => { imeOn = false; imeEndAt = performance.now(); }, true);
+const imeKey = (e) => e.isComposing || imeOn || e.keyCode === 229 || performance.now() - imeEndAt < 80;
 const tryLS = (fn) => { try { return fn(); } catch { return undefined; } };
 const esc = (s) => String(s).replace(/[&<>"]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[x]));
 const HDR_H = 24, RH_W = 44;
@@ -508,7 +514,7 @@ function renameSheet(i) {
     if (!ok || name === old) return renderTabs();
     const err = validName(name, i); if (err) { toast(err); return renderTabs(); }
     mutate(() => { for (const it of review.threads) { const ps = splitRanges(it.range); if (ps.some((p) => p.sheet === old)) it.range = joinRanges(ps.map((p) => p.sheet === old ? { ...p, sheet: name } : p)); } sheet.sheets[i].name = name; }); };
-  inp.onkeydown = (e) => { if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); e.stopPropagation(); };
+  inp.onkeydown = (e) => { if (e.key !== "Escape" && imeKey(e)) { e.stopPropagation(); return; } if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); e.stopPropagation(); };
   inp.onblur = () => fin(true);
 }
 function deleteSheet(i) {
@@ -699,6 +705,7 @@ function startEdit(r, c, initial) {
   $("gridhost").appendChild(ta); ta.focus(); if (initial === undefined) ta.select(); else ta.setSelectionRange(ta.value.length, ta.value.length);
   editing = { r, c, ta, orig, done: false };
   ta.onkeydown = (e) => {
+    if (e.key !== "Escape" && imeKey(e)) { e.stopPropagation(); return; } // 変換中・変換確定の Enter / Tab ではセル移動も確定もしない
     if (e.key === "Enter" && !e.shiftKey && !e.altKey) { e.preventDefault(); endEdit(true); moveSel(1, 0); }
     else if (e.key === "Enter" && (e.altKey || e.shiftKey)) { e.preventDefault(); const p = ta.selectionStart; ta.value = ta.value.slice(0, p) + "\n" + ta.value.slice(ta.selectionEnd); ta.setSelectionRange(p + 1, p + 1); ta.dispatchEvent(new Event("input")); }
     else if (e.key === "Escape") { e.preventDefault(); endEdit(false); }
@@ -1096,7 +1103,7 @@ function addFile() {
       for (const key of j.keys) if (!FILES.has(key)) FILES.set(key, newState(await getFile(key)));
       renderFTabs(); if (j.keys.length) adopt(j.keys[0]); toast(j.created ? "新規作成: " + j.keys[0] : "追加しました");
     } catch (e) { toast("サーバに接続できません"); renderFTabs(); } };
-  inp.onkeydown = (e) => { if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); e.stopPropagation(); };
+  inp.onkeydown = (e) => { if (e.key !== "Escape" && imeKey(e)) { e.stopPropagation(); return; } if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); e.stopPropagation(); };
   inp.onblur = () => fin(false);
 }
 
@@ -1163,7 +1170,13 @@ $("split").addEventListener("mousedown", (e) => { e.preventDefault(); const mv =
   window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up); });
 // 画面サイズが変わったら、空きグリッドを画面いっぱいに足し直す
 let rzT = null;
-new ResizeObserver(() => { clearTimeout(rzT); rzT = setTimeout(() => { if (!editing && !drag && sheet && !listMode && curKey) render(); }, 120); }).observe($("gridhost"));
+let rzSize = "";
+function refit() { clearTimeout(rzT); rzT = setTimeout(() => {
+  const w = $("gridwrap"), sz = w.clientWidth + "x" + w.clientHeight; if (sz === rzSize) return;
+  if (editing || drag) return refit(); // 編集・ドラッグ中は終わってからやり直す
+  rzSize = sz; if (sheet && !listMode && curKey) render(); }, 60); }
+const rzo = new ResizeObserver(refit); rzo.observe($("gridhost")); rzo.observe($("gridwrap")); rzo.observe(document.documentElement);
+window.addEventListener("resize", refit); // 親（アプリのペイン境界）の移動を ResizeObserver が取りこぼしても拾う
 
 // 起動時: 下書き（localStorage）の復元。読み込んだ版が同じときだけ戻す（エージェントの更新を握りつぶさない）
 (function boot() {
